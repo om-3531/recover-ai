@@ -31,21 +31,20 @@ policy engine first.
 
 ## Current Status
 
-**Day 4 — Razorpay Payment Integration & Webhook Ingestion.**
-- Isolated Razorpay client and application service (`RazorpayClient`, `RazorpayService`).
-- HMAC SHA-256 constant-time signature verification for checkouts and webhooks.
-- Idempotent webhook receiver endpoint (`POST /api/v1/webhooks/razorpay`) with automatic deduplication.
-- Payment & Revenue state synchronization on `payment.captured` and `payment.failed`.
-- Order creation endpoint (`POST /api/v1/payments/orders`) and checkout signature verification endpoint (`POST /api/v1/payments/verify-signature`).
-- Immutable audit logging for all integration events.
-- 42/42 backend tests passing (100% mocked offline testing; zero live secrets required).
+**Day 5 — AI-Assisted Recovery Decision Engine & Policy Layer.**
+- Advisory AI Decision Engine (`RecoveryDecisionEngine`, `PolicyEngine`, `AIProvider`).
+- Sanitized `RecoveryContext` (strict zero-leak of PII/secrets/credentials).
+- Deterministic policy pre-checks and post-checks (blocking terminal states, zero recoverable balances, and enforcing mandatory supervisor review for high/critical risk cases).
+- Advisory-only safety boundary: AI cannot execute financial transactions, modify payments, or mutate recovery cases directly.
+- REST API endpoint: `POST /api/v1/ai/recovery-cases/{case_id}/decision`.
+- 54/54 backend tests passing (100% mocked offline testing; zero live secrets required).
 
 ## Tech Stack
 
 **Frontend:** React + Vite + Tailwind CSS
 **Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic, HTTPX)
 **Database:** PostgreSQL
-**AI:** Gemini API *(future milestone)*
+**AI:** Decision Engine & Policy Layer (MockAIProvider offline, Gemini-ready)
 **Payments:** Razorpay Test Mode & Webhooks (Integrated)
 
 

@@ -17,8 +17,9 @@ scope or polish.
 
 ## Current Status
 
-Day 4 — Razorpay Payment Integration & Webhook Ingestion complete. See the end of this file for the
-Day 4 completion notes and the recommended next task.
+Day 5 — AI-Assisted Recovery Decision Engine & Policy Layer complete. See the end of this file for the
+Day 5 completion notes and the recommended next task.
+
 
 
 
@@ -115,17 +116,20 @@ Day 4 completion notes and the recommended next task.
   HMAC SHA-256 constant-time verification, `WebhookService` with idempotency deduplication,
   `POST /api/v1/payments/orders`, `POST /api/v1/payments/verify-signature`,
   `POST /api/v1/webhooks/razorpay`, 42/42 tests passing.
+- Day 5 (done): AI decision & policy layer — `RecoveryDecisionEngine`, `PolicyEngine`,
+  `MockAIProvider`, sanitized `RecoveryContext`, advisory recommendations with mandatory
+  human-review controls, `POST /api/v1/ai/recovery-cases/{case_id}/decision`, 54/54 tests.
 
-**Next recommended task:** Day 5 milestone (e.g. AI Agent Failure Diagnosis & Recommendation Engine).
+**Next recommended task:** Day 6 milestone (e.g. Human-in-the-Loop Authorization & Action Execution Workflow).
 
 Explicitly NOT yet implemented (build only when reached in the
 roadmap):
 
-- Gemini AI agent and prompts
-- Payment recovery / retry execution logic (actual email/SMS sending)
-- Policy engine rules
-- Revenue analytics dashboard integration
-- Synthetic dataset generation
+- Autonomous financial action execution (action execution requires authorization)
+- Direct customer communication dispatch (email/SMS sending workers)
+- Live Gemini API calls in test mode (isolated behind MockAIProvider)
+- Revenue analytics dashboard charts
+- Synthetic dataset generator
 - n8n workflows
 - Authentication
 - Production deployment
@@ -184,6 +188,17 @@ roadmap):
   - `POST /api/v1/payments/verify-signature`
   - `POST /api/v1/webhooks/razorpay`
 - Comprehensive test suite (`test_razorpay.py`) with 42/42 tests passing.
+
+## Day 5 AI Recovery Decision Engine & Policy Layer — What Was Built
+
+- Provider abstraction (`app/ai/provider.py`): `AIProvider` base interface and deterministic `MockAIProvider` with heuristic recovery diagnosis.
+- Sanitized context (`app/ai/schemas.py`): `RecoveryContext` stripped of all secrets, tokens, and PII.
+- Deterministic Policy Engine (`app/ai/policy_engine.py`): Pre-policy checks (terminal states, zero balances) and post-policy safety constraints (mandatory human review for high/critical risks, retry limits).
+- Recovery Decision Engine (`app/ai/decision_engine.py`): Coordinates context loading, policy evaluation, advisory recommendation generation, and audit trail dispatch.
+- REST API route:
+  - `POST /api/v1/ai/recovery-cases/{case_id}/decision`
+- Comprehensive test suite (`test_ai_decision.py`) with 54/54 total tests passing.
+
 
 
 

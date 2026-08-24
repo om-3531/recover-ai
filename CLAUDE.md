@@ -17,8 +17,9 @@ scope or polish.
 
 ## Current Status
 
-Day 1 — Project Foundation complete. See the end of this file for the
-Day 1 completion notes and the recommended next task.
+Day 2 — Database Foundation complete. See the end of this file for the
+Day 2 completion notes and the recommended next task.
+
 
 ## Architecture Principles (do not violate these)
 
@@ -100,24 +101,25 @@ Day 1 completion notes and the recommended next task.
 
 ## Roadmap (do not implement ahead of schedule)
 
-Day 1 (done): project foundation — backend/frontend/db wiring, health
-check, dashboard shell, Docker config, tests, git init.
+- Day 1 (done): project foundation — backend/frontend/db wiring, health
+  check, dashboard shell, Docker config, tests, git init.
+- Day 2 (done): database foundation — SQLAlchemy 2.x data models
+  (`Payment`, `PaymentEvent`, `RevenueRecord`, `RecoveryCase`, `RecoveryAction`,
+  `AuditLog`), enums, mixins, Alembic migrations, test suite.
 
-**Next recommended task:** Design and implement the PostgreSQL
-payment/revenue data model for RecoverAI.
+**Next recommended task:** Day 3 milestone (e.g. Inbound Webhook Ingestion & Idempotency / Event Pipeline).
 
 Explicitly NOT yet implemented (build only when reached in the
 roadmap):
 
 - Gemini AI agent and prompts
-- Payment recovery / retry logic
-- Razorpay API calls and webhook signature verification
-- Policy engine
-- Revenue calculations
-- Synthetic dataset
+- Payment recovery / retry execution logic
+- Razorpay API live calls and webhook verification
+- Policy engine rules
+- Revenue analytics dashboard integration
+- Synthetic dataset generation
 - n8n workflows
 - Authentication
-- Advanced analytics
 - Production deployment
 
 ## Day 1 Foundation — What Was Built
@@ -126,11 +128,25 @@ roadmap):
   `GET /api/v1/status`, config via `pydantic-settings`, SQLAlchemy
   engine/session/Base, and a minimal `SystemHealthCheck` model.
 - React + Vite + Tailwind frontend (`frontend/src`) with a dashboard
-  shell: sidebar, top nav, stat card placeholders (Revenue At Risk,
-  Revenue Recovered, Recovery Rate, Active Cases, Recent AI Decisions,
-  System Status), and placeholder pages for Payments, Recovery Queue,
-  AI Decisions, Analytics, Audit Trail, Failure Lab, and Settings.
+  shell: sidebar, top nav, stat card placeholders, and placeholder pages.
 - `docker-compose.yml` (Postgres + backend) and a backend `Dockerfile`.
 - Backend tests: `test_health.py`, `test_database.py`.
-- `.env.example` (root) and `frontend/.env.example` — no real secrets.
-- `README.md`, `docs/architecture.md`, this file.
+
+## Day 2 Database Foundation — What Was Built
+
+- Domain enums (`app/models/enums.py`): `PaymentStatus`, `PaymentMethod`,
+  `PaymentEventProcessingStatus`, `RevenueStatus`, `RiskStatus`,
+  `RecoveryPriority`, `RecoveryCaseState`, `RecoveryActionStatus`,
+  `RecoveryActionType`, `RecoveryActionChannel`.
+- Reusable `TimestampMixin` (`app/models/mixins.py`).
+- SQLAlchemy 2.x ORM models (`app/models/`):
+  - `Payment`: Razorpay payment details, indexed identifiers, integer paise amounts.
+  - `PaymentEvent`: Webhook event payloads with unique `razorpay_event_id` for idempotency.
+  - `RevenueRecord`: 1:1 linked revenue status and recoverable calculations in integer paise.
+  - `RecoveryCase`: 1:N recovery cases per revenue record with risk/priority states.
+  - `RecoveryAction`: 1:N bounded recovery interventions per recovery case.
+  - `AuditLog`: Generic entity reference with non-colliding `event_metadata` mapping.
+- Alembic database migration environment (`backend/alembic/` & `alembic.ini`) with
+  `0001_initial_system_health.py` and `0002_payment_recovery_schema.py`.
+- Comprehensive test suite (`backend/tests/test_models.py`) with 18/18 passing tests.
+

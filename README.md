@@ -31,17 +31,19 @@ policy engine first.
 
 ## Current Status
 
-**Day 1 — Project Foundation.** Backend, frontend, database configuration,
-and dashboard shell are in place. Payment, AI, and recovery logic are not
-yet implemented (see `CLAUDE.md` for the full roadmap).
+**Day 2 — Database Foundation.** SQLAlchemy 2.x data models (`Payment`, `PaymentEvent`,
+`RevenueRecord`, `RecoveryCase`, `RecoveryAction`, `AuditLog`) and Alembic migration
+framework are implemented. Payment, AI, and recovery logic are scheduled for future
+milestones (see `CLAUDE.md` for the full roadmap).
 
 ## Tech Stack
 
 **Frontend:** React + Vite + Tailwind CSS
-**Backend:** FastAPI + Python (SQLAlchemy, Pydantic)
+**Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic)
 **Database:** PostgreSQL
 **AI:** Gemini API *(future milestone)*
 **Payments:** Razorpay Test Mode *(future milestone)*
+
 
 ## Project Structure
 
@@ -101,11 +103,17 @@ docker compose up -d postgres
 
 Or point `DATABASE_URL` in `.env` at an existing local Postgres instance.
 
-### 4. Start the backend
+### 4. Apply Database Migrations
+```bash
+cd backend
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+alembic upgrade head
+```
+
+### 5. Start the backend
 
 ```bash
 cd backend
-python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
@@ -113,7 +121,7 @@ uvicorn app.main:app --reload
 
 Backend runs at `http://localhost:8000`. Check `GET /health`.
 
-### 5. Start the frontend
+### 6. Start the frontend
 
 ```bash
 cd frontend
@@ -123,12 +131,13 @@ npm run dev
 
 Frontend runs at `http://localhost:5173`.
 
-### 6. Run tests
+### 7. Run tests
 
 ```bash
 cd backend
 pytest
 ```
+
 
 ### Alternative: backend + database via Docker
 

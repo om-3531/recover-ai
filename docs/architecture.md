@@ -1,8 +1,8 @@
-# RecoverAI — Architecture (Day 1 Snapshot)
+# RecoverAI — Architecture (Day 2 Snapshot)
 
-This document describes the architecture **as planned**. Day 1 only implements
-the foundation (app wiring, health check, DB config, dashboard shell). Items
-marked *(future)* are not implemented yet.
+This document describes the architecture **as planned and built**. Day 1 established
+the foundation, and Day 2 implemented the core PostgreSQL/SQLAlchemy 2.x data model
+and Alembic migration infrastructure. Items marked *(future)* are not implemented yet.
 
 ## High-level flow (target end state)
 
@@ -21,6 +21,87 @@ flowchart LR
     I --> J[Analytics / Measurement]
 ```
 
+## Database Schema & Domain Flow (Day 2)
+
+```mermaid
+erDiagram
+    Payment ||--o{ PaymentEvent : "receives"
+    Payment ||--|| RevenueRecord : "originates"
+    RevenueRecord ||--o{ RecoveryCase : "triggers"
+    RecoveryCase ||--o{ RecoveryAction : "executes"
+    AuditLog }|--|| GenericEntity : "audits"
+
+    Payment {
+        int id PK
+        string razorpay_payment_id UK
+        string razorpay_order_id
+        int amount "paise"
+        string currency
+        PaymentStatus status
+        PaymentMethod method
+        string customer_email
+        string customer_reference
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PaymentEvent {
+        int id PK
+        int payment_id FK
+        string razorpay_event_id UK
+        string event_type
+        json payload
+        PaymentEventProcessingStatus processing_status
+        timestamp received_at
+        timestamp processed_at
+    }
+
+    RevenueRecord {
+        int id PK
+        int payment_id FK,UK
+        int gross_amount "paise"
+        int recoverable_amount "paise"
+        string currency
+        RevenueStatus status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RecoveryCase {
+        int id PK
+        int revenue_record_id FK
+        string reason
+        RiskStatus risk_status
+        RecoveryPriority priority
+        RecoveryCaseState current_state
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RecoveryAction {
+        int id PK
+        int recovery_case_id FK
+        RecoveryActionType action_type
+        RecoveryActionChannel channel
+        RecoveryActionStatus status
+        timestamp scheduled_at
+        timestamp executed_at
+        json result
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    AuditLog {
+        int id PK
+        string entity_type
+        string entity_id
+        string action
+        string actor
+        json metadata
+        timestamp timestamp
+    }
+```
+
 ## Core architecture rules
 
 1. **AI never directly controls money.** The AI agent layer (`app/agents`)
@@ -36,16 +117,19 @@ flowchart LR
 5. **Configuration is environment-driven.** `app/core/config.py` is the
    only place that reads environment variables; no secrets are
    hard-coded anywhere in the codebase.
+6. **Financial Precision:** All monetary amounts are stored in integer paise
+   (e.g., 50000 = ₹500.00) to eliminate floating-point rounding errors.
 
-## Day 1 component map
+## Day 2 component map
 
 | Layer | Location | Status |
 |---|---|---|
 | API routes | `backend/app/api/routes/` | `health.py`, `status.py` implemented |
 | Config | `backend/app/core/config.py` | Implemented |
-| DB engine/session | `backend/app/db/` | Implemented |
-| Models | `backend/app/models/system.py` | Minimal health model only |
-| Schemas | `backend/app/schemas/health.py` | Implemented |
+| DB engine/session | `backend/app/db/` | Implemented (`session.py`, `base.py`, `init_db.py`) |
+| Models | `backend/app/models/` | Implemented (`enums.py`, `mixins.py`, `payment.py`, `revenue.py`, `recovery.py`, `audit.py`, `system.py`) |
+| Migrations | `backend/alembic/` | Implemented (`0001_initial_system_health.py`, `0002_payment_recovery_schema.py`) |
+| Schemas | `backend/app/schemas/` | `health.py` implemented (domain schemas scheduled next) |
 | Services | `backend/app/services/` | Empty — future |
 | Agents (AI) | `backend/app/agents/` | Empty — future |
 | Policies | `backend/app/policies/` | Empty — future |
@@ -53,9 +137,3 @@ flowchart LR
 | Webhooks | `backend/app/webhooks/` | Empty — future |
 | Frontend dashboard shell | `frontend/src/` | Implemented (placeholder data) |
 
-## Why this structure
-
-Keeping `agents`, `policies`, and `integrations/razorpay` as separate,
-currently-empty packages from Day 1 means later milestones can be added
-without restructuring the project — reducing risk under the buildathon
-deadline.

@@ -17,8 +17,9 @@ scope or polish.
 
 ## Current Status
 
-Day 2 — Database Foundation complete. See the end of this file for the
-Day 2 completion notes and the recommended next task.
+Day 3 — Service & REST API Layer complete. See the end of this file for the
+Day 3 completion notes and the recommended next task.
+
 
 
 ## Architecture Principles (do not violate these)
@@ -105,16 +106,19 @@ Day 2 completion notes and the recommended next task.
   check, dashboard shell, Docker config, tests, git init.
 - Day 2 (done): database foundation — SQLAlchemy 2.x data models
   (`Payment`, `PaymentEvent`, `RevenueRecord`, `RecoveryCase`, `RecoveryAction`,
-  `AuditLog`), enums, mixins, Alembic migrations, test suite.
+  `AuditLog`), enums, mixins, Alembic migrations, model tests.
+- Day 3 (done): service & REST API layer — `PaymentService`, `RevenueService`,
+  `RecoveryService`, `AuditService`, Pydantic validation schemas, domain exceptions,
+  versioned `/api/v1` routes (`/payments`, `/revenue`, `/recovery`, `/audit`), 30/30 tests.
 
-**Next recommended task:** Day 3 milestone (e.g. Inbound Webhook Ingestion & Idempotency / Event Pipeline).
+**Next recommended task:** Day 4 milestone (e.g. Razorpay Integration & Webhook Processing Pipeline).
 
 Explicitly NOT yet implemented (build only when reached in the
 roadmap):
 
 - Gemini AI agent and prompts
-- Payment recovery / retry execution logic
-- Razorpay API live calls and webhook verification
+- Payment recovery / retry execution logic (actual email/SMS sending)
+- Live Razorpay API calls and signature verification
 - Policy engine rules
 - Revenue analytics dashboard integration
 - Synthetic dataset generation
@@ -148,5 +152,20 @@ roadmap):
   - `AuditLog`: Generic entity reference with non-colliding `event_metadata` mapping.
 - Alembic database migration environment (`backend/alembic/` & `alembic.ini`) with
   `0001_initial_system_health.py` and `0002_payment_recovery_schema.py`.
-- Comprehensive test suite (`backend/tests/test_models.py`) with 18/18 passing tests.
+- Model test suite (`backend/tests/test_models.py`).
+
+## Day 3 Service & REST API Layer — What Was Built
+
+- Domain exceptions (`app/core/exceptions.py`): `NotFoundError` (404),
+  `ConflictError` (409), `BadRequestError` / `InvalidStateTransitionError` (400),
+  registered in `main.py`.
+- Pydantic schemas (`app/schemas/`): `payments.py`, `revenue.py`, `recovery.py`, `audit.py`.
+- Business services (`app/services/`):
+  - `PaymentService`: payment CRUD, status updates, duplicate conflict checks, audit log generation.
+  - `RevenueService`: 1:1 revenue record creation, recoverable amount computation, mark-at-risk.
+  - `RecoveryService`: recovery case state machine, transition validation, recovery action management.
+  - `AuditService`: immutable audit logging and filtered querying.
+- REST API routes (`app/api/routes/`): `/payments`, `/revenue`, `/recovery`, `/audit`, registered in `router.py`.
+- Comprehensive test suite (`test_services.py`, `test_api.py`) with 30/30 tests passing.
+
 

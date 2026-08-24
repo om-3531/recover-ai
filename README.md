@@ -31,10 +31,11 @@ policy engine first.
 
 ## Current Status
 
-**Day 2 — Database Foundation.** SQLAlchemy 2.x data models (`Payment`, `PaymentEvent`,
-`RevenueRecord`, `RecoveryCase`, `RecoveryAction`, `AuditLog`) and Alembic migration
-framework are implemented. Payment, AI, and recovery logic are scheduled for future
-milestones (see `CLAUDE.md` for the full roadmap).
+**Day 3 — Service & REST API Layer.** Business services (`PaymentService`,
+`RevenueService`, `RecoveryService`, `AuditService`), Pydantic schemas, domain error
+handling, and REST API endpoints under `/api/v1/` (`/payments`, `/revenue`, `/recovery`,
+`/audit`, `/status`) are implemented. Live Razorpay webhooks and AI agents are scheduled
+for future milestones (see `CLAUDE.md` for the full roadmap).
 
 ## Tech Stack
 
@@ -43,6 +44,7 @@ milestones (see `CLAUDE.md` for the full roadmap).
 **Database:** PostgreSQL
 **AI:** Gemini API *(future milestone)*
 **Payments:** Razorpay Test Mode *(future milestone)*
+
 
 
 ## Project Structure

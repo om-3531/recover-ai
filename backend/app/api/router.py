@@ -1,15 +1,16 @@
 """
 Aggregates all `/api/v1` routes.
 
-As new domains are built (payments, recovery queue, AI decisions, audit
-trail, analytics) their routers should be created under
-`app/api/routes/` and included here — keeping `main.py` free of route
-wiring details.
+Includes payment, revenue, recovery, audit, and status domain routers.
 """
 
 from fastapi import APIRouter
 
-from app.api.routes import status
+from app.api.routes import audit, payments, recovery, revenue, status
 
 api_router = APIRouter()
+api_router.include_router(payments.router)
+api_router.include_router(revenue.router)
+api_router.include_router(recovery.router)
+api_router.include_router(audit.router)
 api_router.include_router(status.router)

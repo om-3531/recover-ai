@@ -1,8 +1,9 @@
-# RecoverAI — Architecture (Day 2 Snapshot)
+# RecoverAI — Architecture (Day 3 Snapshot)
 
 This document describes the architecture **as planned and built**. Day 1 established
-the foundation, and Day 2 implemented the core PostgreSQL/SQLAlchemy 2.x data model
-and Alembic migration infrastructure. Items marked *(future)* are not implemented yet.
+the foundation, Day 2 implemented the core data model and Alembic migrations, and Day 3
+implemented the application service layer, Pydantic validation schemas, domain exceptions,
+and REST API endpoints under `/api/v1/`. Items marked *(future)* are not implemented yet.
 
 ## High-level flow (target end state)
 
@@ -21,7 +22,19 @@ flowchart LR
     I --> J[Analytics / Measurement]
 ```
 
-## Database Schema & Domain Flow (Day 2)
+## Layered Architecture (Day 3)
+
+```mermaid
+flowchart TD
+    Client[Client / Frontend / Test Client] -->|HTTP JSON| Router[FastAPI Router /api/v1]
+    Router -->|Pydantic Schema Validation| Service[Application Service Layer]
+    Service -->|Business Logic & State Machine| Domain[SQLAlchemy Models]
+    Service -->|Audit Events| Audit[AuditService]
+    Domain -->|ORM Transactions| DB[(PostgreSQL / SQLite)]
+    Audit -->|Audit Trail| DB
+```
+
+## Database Schema & Domain Flow (Day 2 & 3)
 
 ```mermaid
 erDiagram
@@ -112,28 +125,33 @@ erDiagram
    No other module is allowed to call the Razorpay API directly.
 3. **AI logic is isolated** in `app/agents`, separate from routes, models,
    business rules, and payment execution.
-4. **Database access is separated** via `app/db` (engine/session/Base) and
-   `app/models` (ORM models). No raw SQL scattered across route files.
+4. **Database access is separated** via `app/db` (engine/session/Base),
+   `app/models` (ORM models), and `app/services` (service layer). No raw SQL scattered across route files.
 5. **Configuration is environment-driven.** `app/core/config.py` is the
    only place that reads environment variables; no secrets are
    hard-coded anywhere in the codebase.
 6. **Financial Precision:** All monetary amounts are stored in integer paise
    (e.g., 50000 = ₹500.00) to eliminate floating-point rounding errors.
+7. **Deterministic State Transitions:** Case transitions (e.g. `open` → `action_pending` → `recovering` → `recovered` → `closed`)
+   are strictly enforced by `RecoveryService` before committing to the database.
 
-## Day 2 component map
+## Day 3 component map
 
 | Layer | Location | Status |
 |---|---|---|
-| API routes | `backend/app/api/routes/` | `health.py`, `status.py` implemented |
+| API routes | `backend/app/api/routes/` | `health.py`, `status.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py` implemented |
+| Router aggregation | `backend/app/api/router.py` | Implemented |
 | Config | `backend/app/core/config.py` | Implemented |
+| Exceptions | `backend/app/core/exceptions.py` | Implemented (`NotFoundError`, `ConflictError`, `BadRequestError`, `InvalidStateTransitionError`) |
 | DB engine/session | `backend/app/db/` | Implemented (`session.py`, `base.py`, `init_db.py`) |
 | Models | `backend/app/models/` | Implemented (`enums.py`, `mixins.py`, `payment.py`, `revenue.py`, `recovery.py`, `audit.py`, `system.py`) |
 | Migrations | `backend/alembic/` | Implemented (`0001_initial_system_health.py`, `0002_payment_recovery_schema.py`) |
-| Schemas | `backend/app/schemas/` | `health.py` implemented (domain schemas scheduled next) |
-| Services | `backend/app/services/` | Empty — future |
+| Schemas | `backend/app/schemas/` | Implemented (`health.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py`) |
+| Services | `backend/app/services/` | Implemented (`payment_service.py`, `revenue_service.py`, `recovery_service.py`, `audit_service.py`) |
 | Agents (AI) | `backend/app/agents/` | Empty — future |
 | Policies | `backend/app/policies/` | Empty — future |
 | Razorpay integration | `backend/app/integrations/razorpay/` | Empty — future |
 | Webhooks | `backend/app/webhooks/` | Empty — future |
 | Frontend dashboard shell | `frontend/src/` | Implemented (placeholder data) |
+
 

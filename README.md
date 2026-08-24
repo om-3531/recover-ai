@@ -31,20 +31,21 @@ policy engine first.
 
 ## Current Status
 
-**Day 5 — AI-Assisted Recovery Decision Engine & Policy Layer.**
-- Advisory AI Decision Engine (`RecoveryDecisionEngine`, `PolicyEngine`, `AIProvider`).
-- Sanitized `RecoveryContext` (strict zero-leak of PII/secrets/credentials).
-- Deterministic policy pre-checks and post-checks (blocking terminal states, zero recoverable balances, and enforcing mandatory supervisor review for high/critical risk cases).
-- Advisory-only safety boundary: AI cannot execute financial transactions, modify payments, or mutate recovery cases directly.
-- REST API endpoint: `POST /api/v1/ai/recovery-cases/{case_id}/decision`.
-- 54/54 backend tests passing (100% mocked offline testing; zero live secrets required).
+**Day 6 — Recovery Approval & Execution Workflow.**
+- Controlled approval layer (`RecoveryApproval`, `ApprovalService`, `ApprovalPolicy`).
+- Safe execution engine (`RecoveryExecutionService`, `RecoveryExecutor`, `MockRecoveryExecutor`).
+- Server-authoritative authorization gates (client cannot alter action parameters or self-approve).
+- Execution idempotency protection (returns existing execution result without duplicate actions or duplicate side effects).
+- RecoveryCase state machine synchronization (`open` → `action_pending` → `recovering`).
+- REST API endpoints under `/api/v1/approvals` (create, list, get, approve, reject, execute).
+- 66/66 backend tests passing (100% mocked offline testing; zero live secrets required).
 
 ## Tech Stack
 
 **Frontend:** React + Vite + Tailwind CSS
 **Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic, HTTPX)
-**Database:** PostgreSQL
-**AI:** Decision Engine & Policy Layer (MockAIProvider offline, Gemini-ready)
+**Database:** PostgreSQL (Migration 0003)
+**AI & Execution:** AI Decision Engine + Approval & Execution Engine (MockRecoveryExecutor offline)
 **Payments:** Razorpay Test Mode & Webhooks (Integrated)
 
 

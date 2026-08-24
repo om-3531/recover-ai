@@ -22,6 +22,7 @@ from app.models.enums import (
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.approval import RecoveryApproval
     from app.models.revenue import RevenueRecord
 
 
@@ -74,6 +75,13 @@ class RecoveryCase(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="RecoveryAction.id",
     )
+    approvals: Mapped[list["RecoveryApproval"]] = relationship(
+        "RecoveryApproval",
+        back_populates="recovery_case",
+        cascade="all, delete-orphan",
+        order_by="RecoveryApproval.id",
+    )
+
 
 
 class RecoveryAction(Base, TimestampMixin):

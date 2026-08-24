@@ -109,3 +109,14 @@ class RecoveryActionChannel(str, Enum):
     webhook = "webhook"
     in_app = "in_app"
     system = "system"
+
+
+class ApprovalStatus(str, Enum):
+    """Status of a recovery intervention approval request."""
+
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    expired = "expired"
+    cancelled = "cancelled"
+

@@ -5,8 +5,10 @@ Importing all models here ensures they are discovered and registered
 with `Base.metadata` for migrations and database operations.
 """
 
+from app.models.approval import RecoveryApproval
 from app.models.audit import AuditLog
 from app.models.enums import (
+    ApprovalStatus,
     PaymentEventProcessingStatus,
     PaymentMethod,
     PaymentStatus,
@@ -31,6 +33,7 @@ __all__ = [
     "RevenueRecord",
     "RecoveryCase",
     "RecoveryAction",
+    "RecoveryApproval",
     "AuditLog",
     "PaymentStatus",
     "PaymentMethod",
@@ -42,5 +45,6 @@ __all__ = [
     "RecoveryActionStatus",
     "RecoveryActionType",
     "RecoveryActionChannel",
+    "ApprovalStatus",
     "TimestampMixin",
 ]

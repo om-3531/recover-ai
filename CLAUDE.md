@@ -17,8 +17,9 @@ scope or polish.
 
 ## Current Status
 
-Day 5 — AI-Assisted Recovery Decision Engine & Policy Layer complete. See the end of this file for the
-Day 5 completion notes and the recommended next task.
+Day 6 — Recovery Approval & Execution Workflow complete. See the end of this file for the
+Day 6 completion notes and the recommended next task.
+
 
 
 
@@ -119,16 +120,20 @@ Day 5 completion notes and the recommended next task.
 - Day 5 (done): AI decision & policy layer — `RecoveryDecisionEngine`, `PolicyEngine`,
   `MockAIProvider`, sanitized `RecoveryContext`, advisory recommendations with mandatory
   human-review controls, `POST /api/v1/ai/recovery-cases/{case_id}/decision`, 54/54 tests.
+- Day 6 (done): Recovery approval & execution workflow — `RecoveryApproval` model & migration 0003,
+  `ApprovalService`, `ApprovalPolicy`, `RecoveryExecutionService`, `RecoveryExecutor` ABC,
+  `MockRecoveryExecutor`, idempotent execution protection, state machine sync,
+  `/api/v1/approvals` routes, 66/66 tests.
 
-**Next recommended task:** Day 6 milestone (e.g. Human-in-the-Loop Authorization & Action Execution Workflow).
+**Next recommended task:** Day 7 milestone (e.g. Analytics & Metrics Aggregation Dashboard).
 
 Explicitly NOT yet implemented (build only when reached in the
 roadmap):
 
-- Autonomous financial action execution (action execution requires authorization)
-- Direct customer communication dispatch (email/SMS sending workers)
+- Direct customer communication dispatch across live provider networks (Twilio/SendGrid/WhatsApp)
+- Live Razorpay automatic refund/retry transactions (mocked for offline test safety)
 - Live Gemini API calls in test mode (isolated behind MockAIProvider)
-- Revenue analytics dashboard charts
+- Revenue analytics dashboard charts & metric rollups
 - Synthetic dataset generator
 - n8n workflows
 - Authentication
@@ -198,6 +203,23 @@ roadmap):
 - REST API route:
   - `POST /api/v1/ai/recovery-cases/{case_id}/decision`
 - Comprehensive test suite (`test_ai_decision.py`) with 54/54 total tests passing.
+
+## Day 6 Recovery Approval & Execution Workflow — What Was Built
+
+- Persistent approval entity (`app/models/approval.py` & Alembic `0003_recovery_approval_schema.py`): `RecoveryApproval` tracking recommendation, action type, channel, status, approver, timestamps, expiration, and execution results.
+- Approval layer (`app/approval/`): `ApprovalService`, `ApprovalPolicy`, schemas, exceptions.
+- Execution layer (`app/execution/`): `RecoveryExecutionService`, `RecoveryExecutor` ABC, `MockRecoveryExecutor`, schemas, exceptions.
+- Strict authorization & idempotency guards: execution requires server-side `approved` status, blocks pending/rejected/expired approvals, and returns cached results on duplicate executions.
+- State machine synchronization: transitions `RecoveryCase` from `open` → `action_pending` → `recovering` on successful action dispatch.
+- REST API routes (`app/api/routes/approvals.py`):
+  - `POST /api/v1/approvals`
+  - `GET /api/v1/approvals`
+  - `GET /api/v1/approvals/{approval_id}`
+  - `POST /api/v1/approvals/{approval_id}/approve`
+  - `POST /api/v1/approvals/{approval_id}/reject`
+  - `POST /api/v1/approvals/{approval_id}/execute`
+- Comprehensive test suite (`test_approval_execution.py`) with 66/66 total tests passing.
+
 
 
 

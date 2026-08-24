@@ -1,9 +1,11 @@
-# RecoverAI — Architecture (Day 3 Snapshot)
+# RecoverAI — Architecture (Day 4 Snapshot)
 
 This document describes the architecture **as planned and built**. Day 1 established
-the foundation, Day 2 implemented the core data model and Alembic migrations, and Day 3
-implemented the application service layer, Pydantic validation schemas, domain exceptions,
-and REST API endpoints under `/api/v1/`. Items marked *(future)* are not implemented yet.
+the foundation, Day 2 implemented the core data model and Alembic migrations, Day 3
+implemented the application service layer and REST API endpoints, and Day 4 implemented
+the isolated Razorpay client/service, HMAC SHA-256 signature verification, and idempotent
+webhook ingestion pipeline under `/api/v1/webhooks/razorpay`. Items marked *(future)*
+are not implemented yet.
 
 ## High-level flow (target end state)
 
@@ -22,19 +24,20 @@ flowchart LR
     I --> J[Analytics / Measurement]
 ```
 
-## Layered Architecture (Day 3)
+## Layered Architecture (Day 4)
 
 ```mermaid
 flowchart TD
-    Client[Client / Frontend / Test Client] -->|HTTP JSON| Router[FastAPI Router /api/v1]
-    Router -->|Pydantic Schema Validation| Service[Application Service Layer]
-    Service -->|Business Logic & State Machine| Domain[SQLAlchemy Models]
-    Service -->|Audit Events| Audit[AuditService]
+    Client[Client / Checkout / Razorpay Webhooks] -->|HTTP POST / JSON / HMAC Sig| Router[FastAPI Router /api/v1]
+    Router -->|Signature & Payload Validation| WebhookService[WebhookService / RazorpayService]
+    WebhookService -->|Idempotency Check| PaymentEventDB[(PaymentEvent Unique razorpay_event_id)]
+    WebhookService -->|State Synchronization| Domain[Payment & Revenue Models]
+    WebhookService -->|Audit Events| Audit[AuditService]
     Domain -->|ORM Transactions| DB[(PostgreSQL / SQLite)]
     Audit -->|Audit Trail| DB
 ```
 
-## Database Schema & Domain Flow (Day 2 & 3)
+## Database Schema & Domain Flow (Day 2, 3 & 4)
 
 ```mermaid
 erDiagram
@@ -134,24 +137,26 @@ erDiagram
    (e.g., 50000 = ₹500.00) to eliminate floating-point rounding errors.
 7. **Deterministic State Transitions:** Case transitions (e.g. `open` → `action_pending` → `recovering` → `recovered` → `closed`)
    are strictly enforced by `RecoveryService` before committing to the database.
+8. **Cryptographic Signature Verification:** Webhook and payment checkout signatures are validated using HMAC-SHA256 constant-time comparison before trusting request payloads.
+9. **Webhook Idempotency:** Duplicate deliveries of the same Razorpay event ID are safely detected and acknowledged without duplicate side-effects.
 
-## Day 3 component map
+## Day 4 component map
 
 | Layer | Location | Status |
 |---|---|---|
-| API routes | `backend/app/api/routes/` | `health.py`, `status.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py` implemented |
+| API routes | `backend/app/api/routes/` | `health.py`, `status.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py`, `webhooks.py` implemented |
 | Router aggregation | `backend/app/api/router.py` | Implemented |
 | Config | `backend/app/core/config.py` | Implemented |
 | Exceptions | `backend/app/core/exceptions.py` | Implemented (`NotFoundError`, `ConflictError`, `BadRequestError`, `InvalidStateTransitionError`) |
 | DB engine/session | `backend/app/db/` | Implemented (`session.py`, `base.py`, `init_db.py`) |
 | Models | `backend/app/models/` | Implemented (`enums.py`, `mixins.py`, `payment.py`, `revenue.py`, `recovery.py`, `audit.py`, `system.py`) |
 | Migrations | `backend/alembic/` | Implemented (`0001_initial_system_health.py`, `0002_payment_recovery_schema.py`) |
-| Schemas | `backend/app/schemas/` | Implemented (`health.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py`) |
-| Services | `backend/app/services/` | Implemented (`payment_service.py`, `revenue_service.py`, `recovery_service.py`, `audit_service.py`) |
+| Schemas | `backend/app/schemas/` | Implemented (`health.py`, `payments.py`, `revenue.py`, `recovery.py`, `audit.py`, `orders.py`, `webhooks.py`) |
+| Services | `backend/app/services/` | Implemented (`payment_service.py`, `revenue_service.py`, `recovery_service.py`, `audit_service.py`, `webhook_service.py`) |
+| Integrations | `backend/app/integrations/razorpay/` | Implemented (`client.py`, `service.py`, `signature.py`, `exceptions.py`) |
 | Agents (AI) | `backend/app/agents/` | Empty — future |
 | Policies | `backend/app/policies/` | Empty — future |
-| Razorpay integration | `backend/app/integrations/razorpay/` | Empty — future |
-| Webhooks | `backend/app/webhooks/` | Empty — future |
 | Frontend dashboard shell | `frontend/src/` | Implemented (placeholder data) |
+
 
 

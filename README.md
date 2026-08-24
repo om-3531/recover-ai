@@ -31,19 +31,23 @@ policy engine first.
 
 ## Current Status
 
-**Day 3 — Service & REST API Layer.** Business services (`PaymentService`,
-`RevenueService`, `RecoveryService`, `AuditService`), Pydantic schemas, domain error
-handling, and REST API endpoints under `/api/v1/` (`/payments`, `/revenue`, `/recovery`,
-`/audit`, `/status`) are implemented. Live Razorpay webhooks and AI agents are scheduled
-for future milestones (see `CLAUDE.md` for the full roadmap).
+**Day 4 — Razorpay Payment Integration & Webhook Ingestion.**
+- Isolated Razorpay client and application service (`RazorpayClient`, `RazorpayService`).
+- HMAC SHA-256 constant-time signature verification for checkouts and webhooks.
+- Idempotent webhook receiver endpoint (`POST /api/v1/webhooks/razorpay`) with automatic deduplication.
+- Payment & Revenue state synchronization on `payment.captured` and `payment.failed`.
+- Order creation endpoint (`POST /api/v1/payments/orders`) and checkout signature verification endpoint (`POST /api/v1/payments/verify-signature`).
+- Immutable audit logging for all integration events.
+- 42/42 backend tests passing (100% mocked offline testing; zero live secrets required).
 
 ## Tech Stack
 
 **Frontend:** React + Vite + Tailwind CSS
-**Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic)
+**Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic, HTTPX)
 **Database:** PostgreSQL
 **AI:** Gemini API *(future milestone)*
-**Payments:** Razorpay Test Mode *(future milestone)*
+**Payments:** Razorpay Test Mode & Webhooks (Integrated)
+
 
 
 

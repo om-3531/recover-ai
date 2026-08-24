@@ -4,6 +4,12 @@ Pydantic schemas registration for RecoverAI.
 
 from app.schemas.audit import AuditLogListResponse, AuditLogResponse
 from app.schemas.health import HealthResponse
+from app.schemas.orders import (
+    PaymentSignatureVerifyRequest,
+    PaymentSignatureVerifyResponse,
+    RazorpayOrderCreate,
+    RazorpayOrderResponse,
+)
 from app.schemas.payments import (
     PaymentCreate,
     PaymentListResponse,
@@ -24,6 +30,7 @@ from app.schemas.revenue import (
     RevenueRecordResponse,
     RevenueStatusUpdate,
 )
+from app.schemas.webhooks import WebhookResponse
 
 __all__ = [
     "HealthResponse",
@@ -43,4 +50,9 @@ __all__ = [
     "RecoveryActionResponse",
     "AuditLogResponse",
     "AuditLogListResponse",
+    "RazorpayOrderCreate",
+    "RazorpayOrderResponse",
+    "PaymentSignatureVerifyRequest",
+    "PaymentSignatureVerifyResponse",
+    "WebhookResponse",
 ]

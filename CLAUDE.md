@@ -17,8 +17,9 @@ scope or polish.
 
 ## Current Status
 
-Day 3 — Service & REST API Layer complete. See the end of this file for the
-Day 3 completion notes and the recommended next task.
+Day 4 — Razorpay Payment Integration & Webhook Ingestion complete. See the end of this file for the
+Day 4 completion notes and the recommended next task.
+
 
 
 
@@ -110,15 +111,18 @@ Day 3 completion notes and the recommended next task.
 - Day 3 (done): service & REST API layer — `PaymentService`, `RevenueService`,
   `RecoveryService`, `AuditService`, Pydantic validation schemas, domain exceptions,
   versioned `/api/v1` routes (`/payments`, `/revenue`, `/recovery`, `/audit`), 30/30 tests.
+- Day 4 (done): Razorpay integration & webhooks — `RazorpayClient`, `RazorpayService`,
+  HMAC SHA-256 constant-time verification, `WebhookService` with idempotency deduplication,
+  `POST /api/v1/payments/orders`, `POST /api/v1/payments/verify-signature`,
+  `POST /api/v1/webhooks/razorpay`, 42/42 tests passing.
 
-**Next recommended task:** Day 4 milestone (e.g. Razorpay Integration & Webhook Processing Pipeline).
+**Next recommended task:** Day 5 milestone (e.g. AI Agent Failure Diagnosis & Recommendation Engine).
 
 Explicitly NOT yet implemented (build only when reached in the
 roadmap):
 
 - Gemini AI agent and prompts
 - Payment recovery / retry execution logic (actual email/SMS sending)
-- Live Razorpay API calls and signature verification
 - Policy engine rules
 - Revenue analytics dashboard integration
 - Synthetic dataset generation
@@ -167,5 +171,19 @@ roadmap):
   - `AuditService`: immutable audit logging and filtered querying.
 - REST API routes (`app/api/routes/`): `/payments`, `/revenue`, `/recovery`, `/audit`, registered in `router.py`.
 - Comprehensive test suite (`test_services.py`, `test_api.py`) with 30/30 tests passing.
+
+## Day 4 Razorpay Integration & Webhooks — What Was Built
+
+- Isolated Razorpay client (`app/integrations/razorpay/client.py`) for order creation using HTTP Basic Auth.
+- Cryptographic HMAC-SHA256 signature verification (`app/integrations/razorpay/signature.py`) with constant-time comparison.
+- Razorpay application service (`app/integrations/razorpay/service.py`) with audit trail integration.
+- Inbound webhook processing pipeline (`app/services/webhook_service.py`) supporting `payment.captured`, `payment.failed`, and unsupported event fallbacks.
+- Webhook idempotency deduplication using `PaymentEvent.razorpay_event_id` unique constraint.
+- REST API routes:
+  - `POST /api/v1/payments/orders`
+  - `POST /api/v1/payments/verify-signature`
+  - `POST /api/v1/webhooks/razorpay`
+- Comprehensive test suite (`test_razorpay.py`) with 42/42 tests passing.
+
 
 

@@ -12,17 +12,22 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.approval.policy import _ensure_utc
+from app.core.metrics import metrics
 from app.execution.exceptions import ExecutionAuthorizationError
 from app.execution.executor import RecoveryExecutor
 from app.execution.mock_executor import MockRecoveryExecutor
 from app.execution.schemas import ExecutionResponse, ExecutionResult
+
 from app.models.approval import RecoveryApproval
 from app.models.enums import (
     ApprovalStatus,
+    JobStatus,
     RecoveryActionStatus,
     RecoveryCaseState,
 )
+from app.models.job import RecoveryExecutionJob
 from app.models.recovery import RecoveryAction, RecoveryCase
+
 from app.models.revenue import RevenueRecord
 from app.schemas.recovery import RecoveryCaseStateUpdate
 from app.services.audit_service import AuditService
@@ -98,7 +103,7 @@ class RecoveryExecutionService:
                 f"Cannot execute action on case in terminal state '{case.current_state.value}'"
             )
 
-        # Step 4: Idempotency Check
+        # Step 4: Idempotency Check — if already executed, return cached result
         if approval.recovery_action_id is not None:
             existing_action = approval.recovery_action
             if (
@@ -139,20 +144,17 @@ class RecoveryExecutionService:
             },
         )
 
-        # Step 6: Create or update RecoveryAction record
-        if approval.recovery_action_id is None:
-            action = RecoveryAction(
-                recovery_case_id=case.id,
-                action_type=approval.action_type,
-                channel=approval.channel,
-                status=RecoveryActionStatus.pending,
-                scheduled_at=now,
-            )
-            db.add(action)
-            db.flush()
-            approval.recovery_action_id = action.id
-        else:
-            action = approval.recovery_action
+        # Step 6: Create RecoveryAction record and bind to approval
+        action = RecoveryAction(
+            recovery_case_id=case.id,
+            action_type=approval.action_type,
+            channel=approval.channel,
+            status=RecoveryActionStatus.pending,
+            scheduled_at=now,
+        )
+        db.add(action)
+        db.flush()
+        approval.recovery_action_id = action.id
 
         # Step 7: Execute using execution adapter
         exec_adapter = executor or MockRecoveryExecutor()
@@ -169,14 +171,46 @@ class RecoveryExecutionService:
             context=context,
         )
 
-        # Step 8: Persist execution result on RecoveryAction & Approval
+        # Step 8: Persist execution result on RecoveryAction, Approval, & ExecutionJob
         action.status = exec_result.status
         action.result = exec_result.model_dump(mode="json")
         action.executed_at = exec_result.executed_at
         approval.execution_result = exec_result.model_dump(mode="json")
 
-        # Step 9: State machine transition synchronization
+        job_key = f"approval:{approval.id}:case:{case.id}:action:{approval.action_type.value}:{approval.channel.value}"
+        existing_job = db.scalar(
+            select(RecoveryExecutionJob).where(
+                RecoveryExecutionJob.idempotency_key == job_key
+            )
+        )
+        if not existing_job:
+            job = RecoveryExecutionJob(
+                recovery_case_id=case.id,
+                recovery_approval_id=approval.id,
+                recovery_action_id=action.id,
+                status=JobStatus.succeeded if exec_result.success else JobStatus.failed,
+                attempt_count=1,
+                max_attempts=3,
+                idempotency_key=job_key,
+                scheduled_at=action.scheduled_at or now,
+                started_at=now,
+                completed_at=exec_result.executed_at,
+                error_code=exec_result.error_code,
+                error_message=exec_result.message if not exec_result.success else None,
+                result=action.result,
+            )
+            db.add(job)
+        else:
+            existing_job.status = (
+                JobStatus.succeeded if exec_result.success else JobStatus.failed
+            )
+            existing_job.completed_at = exec_result.executed_at
+            existing_job.result = action.result
+            existing_job.recovery_action_id = action.id
+
+        # Step 10: State machine transition synchronization
         if exec_result.success:
+            metrics.increment("execution_successes_total")
             if case.current_state == RecoveryCaseState.open:
                 RecoveryService.update_recovery_case_state(
                     db=db,
@@ -187,6 +221,16 @@ class RecoveryExecutionService:
                     ),
                     actor=actor,
                 )
+                RecoveryService.update_recovery_case_state(
+                    db=db,
+                    case_id=case.id,
+                    state_update=RecoveryCaseStateUpdate(
+                        current_state=RecoveryCaseState.recovering,
+                        reason=f"Action executed via {approval.channel.value}",
+                    ),
+                    actor=actor,
+                )
+            elif case.current_state == RecoveryCaseState.action_pending:
                 RecoveryService.update_recovery_case_state(
                     db=db,
                     case_id=case.id,
@@ -210,10 +254,12 @@ class RecoveryExecutionService:
                 },
             )
         else:
+            metrics.increment("execution_failures_total")
             AuditService.create_audit_log(
                 db=db,
                 entity_type="recovery_action",
                 entity_id=str(action.id),
+
                 action="execution_failed",
                 actor=actor,
                 metadata={

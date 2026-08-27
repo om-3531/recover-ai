@@ -14,7 +14,10 @@ from app.db.session import SessionLocal, engine
 
 def test_engine_is_configured():
     assert engine is not None
-    assert str(engine.url).startswith("postgresql")
+    url_str = str(engine.url)
+    assert url_str.startswith("postgresql") or url_str.startswith("sqlite"), (
+        f"Expected postgresql or sqlite URL, got: {url_str}"
+    )
 
 
 def test_session_factory_creates_session():

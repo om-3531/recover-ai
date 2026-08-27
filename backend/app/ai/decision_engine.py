@@ -14,10 +14,15 @@ from app.ai.policy_engine import PolicyEngine
 from app.ai.provider import AIProvider, MockAIProvider
 from app.ai.schemas import RecoveryContext, RecoveryRecommendation
 from app.core.exceptions import NotFoundError
+from app.core.metrics import metrics
 from app.models.payment import Payment
 from app.models.recovery import RecoveryCase
 from app.models.revenue import RevenueRecord
+from app.policy.schemas import MerchantPolicyBase
+from app.policy.service import PolicyService
 from app.services.audit_service import AuditService
+
+
 
 
 class RecoveryDecisionEngine:
@@ -90,12 +95,30 @@ class RecoveryDecisionEngine:
             metadata={"case_id": case_id},
         )
 
-        # Step 3: Build sanitized context
+        # Step 3: Build sanitized context & fetch active merchant policy
         context = cls._build_context(db, case)
+        merchant_policy_orm = PolicyService.get_or_create_default_policy(db)
+        merchant_policy = MerchantPolicyBase(
+            high_risk_threshold_paise=merchant_policy_orm.high_risk_threshold_paise,
+            critical_risk_threshold_paise=merchant_policy_orm.critical_risk_threshold_paise,
+            human_review_threshold_paise=merchant_policy_orm.human_review_threshold_paise,
+            auto_execute_low_risk=merchant_policy_orm.auto_execute_low_risk,
+            max_attempts=merchant_policy_orm.max_attempts,
+            backoff_base_seconds=merchant_policy_orm.backoff_base_seconds,
+            allowed_channels=merchant_policy_orm.allowed_channels,
+            preferred_channel=merchant_policy_orm.preferred_channel,
+            min_recovery_amount_paise=merchant_policy_orm.min_recovery_amount_paise,
+            max_recovery_amount_paise=merchant_policy_orm.max_recovery_amount_paise,
+            require_approval_for_high_risk=merchant_policy_orm.require_approval_for_high_risk,
+            require_approval_for_critical_risk=merchant_policy_orm.require_approval_for_critical_risk,
+            webhook_enabled=merchant_policy_orm.webhook_enabled,
+            is_active=merchant_policy_orm.is_active,
+        )
 
         # Step 4: Pre-policy evaluation
-        pre_policy = PolicyEngine.evaluate_pre_policy(context)
+        pre_policy = PolicyEngine.evaluate_pre_policy(context, merchant_policy=merchant_policy)
         if not pre_policy.allowed:
+            metrics.increment("policy_blocks_total")
             rec = RecoveryRecommendation(
                 recovery_case_id=case_id,
                 recommended_action_type=None,
@@ -116,24 +139,51 @@ class RecoveryDecisionEngine:
                 entity_id=str(case_id),
                 action="ai_recovery_decision_blocked",
                 actor=actor,
-                metadata={"reason": pre_policy.reason},
+                metadata={"reason": pre_policy.reason, "policy_id": merchant_policy_orm.id},
             )
             db.commit()
             return rec
 
         # Step 5: Call AI Provider
+        metrics.increment("ai_decisions_total")
         ai_provider = provider or MockAIProvider()
         raw_rec = ai_provider.generate_recovery_recommendation(context)
 
         # Step 6: Post-policy evaluation
         final_policy = PolicyEngine.evaluate_post_policy(
-            context=context, raw_rec=raw_rec, pre_policy=pre_policy
+            context=context,
+            raw_rec=raw_rec,
+            pre_policy=pre_policy,
+            merchant_policy=merchant_policy,
         )
 
         # Step 7: Build final recommendation
         is_action_blocked = (
             raw_rec.recommended_action_type in final_policy.blocked_actions
         )
+        if is_action_blocked:
+            metrics.increment("policy_blocks_total")
+            AuditService.create_audit_log(
+                db=db,
+                entity_type="recovery_case",
+                entity_id=str(case_id),
+                action="policy_override_prevented",
+                actor="policy_engine",
+                metadata={
+                    "recommended_action": (
+                        raw_rec.recommended_action_type.value
+                        if raw_rec.recommended_action_type
+                        else None
+                    ),
+                    "recommended_channel": (
+                        raw_rec.recommended_channel.value
+                        if raw_rec.recommended_channel
+                        else None
+                    ),
+                    "warnings": final_policy.warnings,
+                },
+            )
+
         final_action_type = (
             None if is_action_blocked else raw_rec.recommended_action_type
         )
@@ -180,3 +230,4 @@ class RecoveryDecisionEngine:
         )
         db.commit()
         return rec
+

@@ -120,3 +120,15 @@ class ApprovalStatus(str, Enum):
     expired = "expired"
     cancelled = "cancelled"
 
+
+class JobStatus(str, Enum):
+    """Lifecycle status of a recovery execution job."""
+
+    queued = "queued"
+    running = "running"
+    succeeded = "succeeded"
+    failed = "failed"
+    retry_scheduled = "retry_scheduled"
+    cancelled = "cancelled"
+
+

@@ -51,3 +51,16 @@ def verify_webhook_signature(
     expected_signature = hmac.new(key, body_bytes, hashlib.sha256).hexdigest()
 
     return hmac.compare_digest(expected_signature, signature)
+
+
+def create_hmac_sha256_signature(
+    raw_body: Union[bytes, str],
+    secret: str,
+) -> str:
+    """
+    Generate an HMAC-SHA256 hex digest signature for testing or simulation.
+    """
+    body_bytes = raw_body.encode("utf-8") if isinstance(raw_body, str) else raw_body
+    key = secret.encode("utf-8")
+    return hmac.new(key, body_bytes, hashlib.sha256).hexdigest()
+

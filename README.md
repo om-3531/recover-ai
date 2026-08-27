@@ -1,162 +1,211 @@
 # RecoverAI
 
+**AI-Powered Payment Recovery Automation Platform**
+Razorpay Buildathon 2026 — Track 03: AI Revenue Recovery
+
+---
+
 ## Overview
 
-RecoverAI is an AI-powered autonomous revenue recovery agent, built for the
-Razorpay AI Buildathon 2026 — Track 03: AI Revenue Recovery.
+RecoverAI detects at-risk and failed payments, diagnoses the cause using AI,
+recommends a recovery intervention, applies deterministic policy checks,
+and executes a bounded recovery workflow — with a human approval gate for
+high-risk actions. Every decision is recorded in an audit trail.
 
-## Problem
+**Architecture principle: AI never directly controls money.**
 
-Failed payments create recoverable revenue loss for merchants. Today,
-diagnosing why a payment failed, deciding how to intervene, and following
-up is mostly manual, slow, and inconsistent.
+```
+AI recommendation → PolicyEngine → ApprovalService → ExecutionService
+```
 
-## Planned Solution
+## Features
 
-**Detect → Diagnose → Decide → Recover → Measure → Audit.**
-
-1. Detect revenue at risk from failed/at-risk payments.
-2. Diagnose why a payment failed.
-3. Estimate the probability of recovery.
-4. Recommend an intervention (AI-generated).
-5. Apply deterministic safety/policy rules before any action is authorized.
-6. Execute a bounded recovery workflow.
-7. Record every decision and action in an audit trail.
-8. Measure actual revenue recovered.
-
-See [`docs/architecture.md`](docs/architecture.md) for the full flow and
-architecture rules — in particular, **the AI never directly authorizes a
-financial action**; every recommendation passes through a deterministic
-policy engine first.
-
-## Current Status
-
-**Day 6 — Recovery Approval & Execution Workflow.**
-- Controlled approval layer (`RecoveryApproval`, `ApprovalService`, `ApprovalPolicy`).
-- Safe execution engine (`RecoveryExecutionService`, `RecoveryExecutor`, `MockRecoveryExecutor`).
-- Server-authoritative authorization gates (client cannot alter action parameters or self-approve).
-- Execution idempotency protection (returns existing execution result without duplicate actions or duplicate side effects).
-- RecoveryCase state machine synchronization (`open` → `action_pending` → `recovering`).
-- REST API endpoints under `/api/v1/approvals` (create, list, get, approve, reject, execute).
-- 66/66 backend tests passing (100% mocked offline testing; zero live secrets required).
+- **AI Payment Diagnosis**: MockAIProvider (default) or Gemini (opt-in)
+- **Razorpay Webhook Integration**: HMAC-SHA256 signature verification, idempotency dedup
+- **Risk Assessment**: Automatic low-risk vs high-risk classification
+- **Low-Risk Auto-Recovery**: Automatic execution for low-risk payment failures
+- **High-Risk Approval Gate**: Human-in-the-loop approval required for high-risk cases
+- **Interactive Approval Dashboard**: Approve/reject pending approvals from the UI
+- **Real-Time Live Monitor**: Webhook event feed with case timeline
+- **Pipeline Visualization**: 8-stage pipeline showing recovery progress
+- **Analytics Dashboard**: KPIs, revenue recovery rates, case distribution
+- **Demo Mode**: Full simulation without real Razorpay credentials
+- **Comprehensive Audit Trail**: Every state mutation logged
 
 ## Tech Stack
 
-**Frontend:** React + Vite + Tailwind CSS
-**Backend:** FastAPI + Python (SQLAlchemy 2.x, Alembic, Pydantic, HTTPX)
-**Database:** PostgreSQL (Migration 0003)
-**AI & Execution:** AI Decision Engine + Approval & Execution Engine (MockRecoveryExecutor offline)
-**Payments:** Razorpay Test Mode & Webhooks (Integrated)
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, Tailwind CSS |
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2.x, Pydantic |
+| Database | SQLite (local dev), PostgreSQL (Docker/production) |
+| AI | MockAIProvider (default), Gemini (opt-in via `AI_PROVIDER=gemini`) |
+| Payments | Razorpay Test Mode + Webhooks |
+| Deployment | Docker, docker-compose |
 
+## Quick Start (2 terminals)
 
+### Terminal 1 — Backend
 
+```bash
+cd D:\Downloads\recover-ai\backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+### Terminal 2 — Frontend
+
+```bash
+cd D:\Downloads\recover-ai\frontend
+npm run dev
+```
+
+### Open Dashboard
+
+Navigate to **http://localhost:5173**
+
+> **Getting ERR_CONNECTION_REFUSED?** This means the frontend dev server
+> is not running. Make sure Terminal 2 is active with `npm run dev`.
+
+## URLs
+
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:5173 |
+| Backend API | http://127.0.0.1:8000 |
+| Swagger Docs | http://127.0.0.1:8000/docs |
+| Health Check | http://127.0.0.1:8000/health |
+| Readiness Probe | http://127.0.0.1:8000/ready |
+
+## Demo Instructions
+
+1. Start both backend and frontend (see Quick Start above)
+2. Open http://localhost:5173
+3. Click **Seed Demo Data** to populate sample data (20 cases)
+4. Click **Low-Risk Failure** to simulate automatic recovery
+5. Click **High-Risk Failure** to trigger the approval workflow
+6. In the **Approval Center**, click **Approve** to authorize recovery
+7. Watch the pipeline complete and timeline update
+
+## Environment Variables
+
+Copy `.env.example` to `.env` in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Key variables (all have safe defaults for local demo):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AI_PROVIDER` | `mock` | Set to `gemini` for live AI |
+| `DEMO_MODE` | `true` | Enable demo endpoints |
+| `RAZORPAY_KEY_ID` | `""` | Empty = no real Razorpay calls |
+| `RAZORPAY_KEY_SECRET` | `""` | Empty = no real Razorpay calls |
+| `RAZORPAY_WEBHOOK_SECRET` | `""` | Empty = simulation uses mock secret |
+| `DATABASE_URL` | PostgreSQL default | SQLite used for local dev |
+
+**Never commit `.env` with real credentials.**
+
+## Running Tests
+
+```bash
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Current: **390/390 tests passing**
+
+## Building for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+Output: `frontend/dist/` (47 modules, ~73KB gzipped)
+
+## Docker Deployment
+
+```bash
+# Start PostgreSQL + Backend
+docker compose up -d
+
+# Frontend runs locally
+cd frontend && npm install && npm run dev
+```
+
+The backend Dockerfile creates tables automatically on first startup
+(no manual Alembic migration needed for fresh databases).
 
 ## Project Structure
 
 ```
 recover-ai/
-├── frontend/        React + Vite + Tailwind dashboard
-├── backend/          FastAPI application
+├── frontend/                  React + Vite + Tailwind dashboard
+│   └── src/
+│       ├── components/        ApprovalCenter, Sidebar, TopNav, StatCard
+│       ├── pages/             DashboardPage, PolicySettingsPage, WebhookConsolePage
+│       ├── services/api.js    API client functions
+│       └── hooks/             useSystemStatus
+├── backend/                   FastAPI application
 │   └── app/
-│       ├── api/       Route handlers
-│       ├── core/       Config
-│       ├── db/         Engine, session, Base
-│       ├── models/     SQLAlchemy models
-│       ├── schemas/     Pydantic schemas
-│       ├── services/    Business logic (future)
-│       ├── agents/       AI logic (future)
-│       ├── policies/      Policy/authorization engine (future)
-│       ├── integrations/razorpay/  Razorpay API layer (future)
-│       └── webhooks/       Inbound webhook handlers (future)
-├── data/            Local dev data (gitignored)
-├── docs/            Architecture docs
-├── n8n/              Workflow definitions (future)
-└── docker-compose.yml
+│       ├── api/routes/        REST endpoints (health, payments, webhooks, etc.)
+│       ├── ai/                AI provider abstraction + MockAIProvider + Gemini
+│       ├── approval/          ApprovalService, ApprovalPolicy, schemas
+│       ├── execution/         RecoveryExecutionService, RecoveryExecutor
+│       ├── orchestration/     RecoveryOrchestrator (end-to-end coordination)
+│       ├── integrations/      Razorpay client, signature verification
+│       ├── models/            SQLAlchemy models + enums
+│       ├── services/          WebhookService, AuditService, AnalyticsService
+│       ├── demo/              Synthetic data generator + scenarios
+│       ├── policy/            MerchantPolicy rules engine
+│       ├── jobs/              Background execution jobs
+│       └── providers/         Multi-channel providers (Mock + real foundations)
+├── docs/                      Architecture, demo scripts, checklists
+├── docker-compose.yml         PostgreSQL + Backend
+└── .env.example               Environment variable template
 ```
-
-## Local Development
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 16 (or Docker)
-
-### 1. Clone the project
-
-```bash
-git clone <repo-url>
-cd recover-ai
-```
-
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-cp frontend/.env.example frontend/.env.local
-```
-
-Edit `.env` if your local Postgres credentials differ from the defaults.
-Never commit `.env`.
-
-### 3. Start PostgreSQL
-
-Using Docker (recommended):
-
-```bash
-docker compose up -d postgres
-```
-
-Or point `DATABASE_URL` in `.env` at an existing local Postgres instance.
-
-### 4. Apply Database Migrations
-```bash
-cd backend
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-alembic upgrade head
-```
-
-### 5. Start the backend
-
-```bash
-cd backend
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-Backend runs at `http://localhost:8000`. Check `GET /health`.
-
-### 6. Start the frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs at `http://localhost:5173`.
-
-### 7. Run tests
-
-```bash
-cd backend
-pytest
-```
-
-
-### Alternative: backend + database via Docker
-
-```bash
-docker compose up -d
-```
-
-This starts PostgreSQL and the backend container. Run the frontend
-locally with `npm run dev` as above (see `docker-compose.yml` for why the
-frontend isn't containerized yet).
 
 ## Architecture
 
 See [`docs/architecture.md`](docs/architecture.md) for the full system
-diagram and the architecture rules (AI/policy/execution separation,
-integration isolation, etc.).
+diagram and architecture rules.
+
+Key principle: **AI never directly controls money.** The flow is always:
+
+```
+AI recommendation → PolicyEngine → ApprovalService → ExecutionService
+```
+
+Server-side policy remains authoritative. The frontend never authorizes
+financial actions directly.
+
+## Security
+
+- HMAC-SHA256 with constant-time comparison for webhook signatures
+- Idempotent duplicate webhook handling
+- No secrets in frontend code or API responses
+- CORS restricted to localhost
+- Demo mode safety gates on all simulation endpoints
+- All monetary values stored as integer paise (never float)
+
+## Troubleshooting
+
+**ERR_CONNECTION_REFUSED on localhost:5173**
+→ The frontend dev server is not running. Start it with `npm run dev`.
+
+**Backend returns 500 on first request**
+→ Database tables may not exist. The app auto-creates tables on startup.
+If issues persist, restart the backend server.
+
+**No data in dashboard**
+→ Click "Seed Demo Data" to populate sample recovery cases.
+
+**Approval Center is empty**
+→ Simulate a high-risk payment failure first. High-risk cases require
+human approval; low-risk cases auto-complete.
+
+## License
+
+Built for Razorpay Buildathon 2026.

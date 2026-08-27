@@ -7,15 +7,18 @@ export default {
         brand: {
           50: "#eef4ff",
           100: "#dbe6fe",
+          300: "#7ea8f7",
           400: "#5b8def",
           500: "#3766e8",
           600: "#274fc7",
           700: "#1f3fa0",
+          950: "#0c1d4a",
         },
         surface: {
           DEFAULT: "#0b1120",
           raised: "#111a2e",
           border: "#1f2a44",
+          card: "#0e1628",
         },
       },
       fontFamily: {

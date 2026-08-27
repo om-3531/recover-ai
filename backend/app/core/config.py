@@ -7,6 +7,7 @@ list of variables this application expects.
 """
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,24 +30,52 @@ class Settings(BaseSettings):
 
     # --- General ---
     APP_NAME: str = "recover-ai-backend"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "development"  # development, staging, production
+    DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
     API_V1_PREFIX: str = "/api/v1"
+    APP_VERSION: str = "0.1.0"
 
     # --- Database ---
     # Default points at a local dev Postgres instance (see docker-compose.yml).
     # Not a secret — override via .env for any real credentials.
     DATABASE_URL: str = "postgresql://recoverai:recoverai@localhost:5432/recoverai"
 
-    # --- AI (used in a later milestone, not Day 1) ---
+    # --- AI Recommendation Engine ---
+    AI_PROVIDER: str = "mock"  # mock, gemini
     GEMINI_API_KEY: str = ""
+    AI_API_KEY: str = ""  # alias
+    AI_MODEL: str = "gemini-1.5-flash"
 
-    # --- Razorpay (used in a later milestone, not Day 1) ---
+    # --- Razorpay Payments & Webhooks ---
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     RAZORPAY_WEBHOOK_SECRET: str = ""
 
+    # --- Communication Providers (optional / safely disabled by default) ---
+    SENDGRID_API_KEY: str = ""
+    SENDGRID_FROM_EMAIL: str = "noreply@recoverai.example"
+
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
+    WHATSAPP_ACCESS_TOKEN: str = ""
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    META_WHATSAPP_TOKEN: str = ""  # alias
+
+    # --- Webhooks & Execution Jobs ---
+    WEBHOOK_TIMEOUT_SECONDS: float = 10.0
+    WEBHOOK_ALLOW_INSECURE_HTTP: bool = False  # Set true only in dev to allow http://localhost
+    JOB_MAX_ATTEMPTS: int = 3
+    JOB_BACKOFF_BASE_SECONDS: int = 30
+
     # --- CORS ---
     FRONTEND_ORIGIN: str = "http://localhost:5173"
+
+    # --- Demo / Buildathon Configuration ---
+    DEMO_MODE: bool = True
+    DEMO_SEED: int = 42
 
 
 @lru_cache

@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
+import PolicySettingsPage from "./pages/PolicySettingsPage";
+import WebhookConsolePage from "./pages/WebhookConsolePage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 const PLACEHOLDER_PAGES = [
@@ -29,16 +31,6 @@ const PLACEHOLDER_PAGES = [
     title: "Audit Trail",
     description: "A full record of every decision and action taken by the system.",
   },
-  {
-    path: "/failure-lab",
-    title: "Failure Lab",
-    description: "Simulate and inspect payment failure scenarios in test mode.",
-  },
-  {
-    path: "/settings",
-    title: "Settings",
-    description: "Configuration for policies, integrations, and notifications.",
-  },
 ];
 
 export default function App() {
@@ -46,6 +38,8 @@ export default function App() {
     <DashboardLayout>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/settings" element={<PolicySettingsPage />} />
+        <Route path="/failure-lab" element={<WebhookConsolePage />} />
         {PLACEHOLDER_PAGES.map(({ path, title, description }) => (
           <Route
             key={path}
@@ -57,3 +51,4 @@ export default function App() {
     </DashboardLayout>
   );
 }
+

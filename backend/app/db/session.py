@@ -15,13 +15,16 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-# `pool_pre_ping` keeps the pool honest about dropped connections, which
-# matters for long-lived dev/hackathon sessions against a local Postgres.
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    future=True,
-)
+# SQLite requires `check_same_thread=False` for use with FastAPI's async thread pool.
+# PostgreSQL works fine with or without it, so we always pass it for simplicity.
+_engine_kwargs: dict = {
+    "pool_pre_ping": True,
+    "future": True,
+}
+if settings.DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(settings.DATABASE_URL, **_engine_kwargs)
 
 SessionLocal = sessionmaker(
     bind=engine,
@@ -39,5 +42,8 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

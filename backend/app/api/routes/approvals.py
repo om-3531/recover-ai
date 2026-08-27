@@ -4,7 +4,7 @@ Recovery Approval and Execution REST API routes.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.approval.schemas import (
@@ -88,7 +88,7 @@ def get_approval(
 )
 def approve_recovery_action(
     approval_id: int,
-    decision: Optional[ApprovalDecisionRequest] = None,
+    decision: Optional[ApprovalDecisionRequest] = Body(default=None),
     db: Session = Depends(get_db),
 ) -> ApprovalResponse:
     """Explicitly authorize execution of a pending recovery action."""
@@ -105,7 +105,7 @@ def approve_recovery_action(
 )
 def reject_recovery_action(
     approval_id: int,
-    decision: Optional[ApprovalDecisionRequest] = None,
+    decision: Optional[ApprovalDecisionRequest] = Body(default=None),
     db: Session = Depends(get_db),
 ) -> ApprovalResponse:
     """Reject a pending recovery approval request."""

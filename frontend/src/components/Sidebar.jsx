@@ -4,13 +4,16 @@ import { NAV_ITEMS } from "../utils/navigation";
 export default function Sidebar() {
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col border-r border-surface-border bg-surface-raised">
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-surface-border">
-        <div className="h-8 w-8 rounded-md bg-brand-500 flex items-center justify-center text-sm font-bold text-white">
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-surface-border">
+        <div className="h-9 w-9 rounded-lg bg-brand-500 flex items-center justify-center text-base font-black text-white shadow-lg shadow-brand-500/20">
           R
         </div>
-        <span className="text-slate-100 font-semibold tracking-tight">
-          RecoverAI
-        </span>
+        <div>
+          <span className="text-slate-100 font-bold tracking-tight text-sm">
+            RecoverAI
+          </span>
+          <p className="text-[10px] text-slate-500 leading-tight">AI Revenue Recovery</p>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -33,7 +36,9 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-4 border-t border-surface-border text-xs text-slate-500">
+      <div className="px-5 py-4 border-t border-surface-border text-[10px] text-slate-500">
+        <span className="font-medium text-slate-400">Buildathon 2026</span>
+        <br />
         Track 03 — AI Revenue Recovery
       </div>
     </aside>

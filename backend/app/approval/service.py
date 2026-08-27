@@ -11,11 +11,13 @@ from sqlalchemy.orm import Session, selectinload
 from app.approval.exceptions import ApprovalNotFoundError
 from app.approval.policy import ApprovalPolicy, _ensure_utc
 from app.approval.schemas import ApprovalCreateRequest, ApprovalDecisionRequest
+from app.core.metrics import metrics
 from app.models.approval import RecoveryApproval
 from app.models.enums import ApprovalStatus
 from app.models.recovery import RecoveryCase
 from app.models.revenue import RevenueRecord
 from app.services.audit_service import AuditService
+
 
 
 class ApprovalService:
@@ -66,6 +68,8 @@ class ApprovalService:
         )
         db.add(approval)
         db.flush()
+
+        metrics.increment("approval_requests_total")
 
         AuditService.create_audit_log(
             db=db,
@@ -137,6 +141,8 @@ class ApprovalService:
         approval.approved_by = approver
         approval.approved_at = now
 
+        metrics.increment("approvals_total")
+
         AuditService.create_audit_log(
             db=db,
             entity_type="recovery_approval",
@@ -176,6 +182,8 @@ class ApprovalService:
         approval.rejection_reason = rejection_reason
         approval.rejected_at = now
 
+        metrics.increment("rejections_total")
+
         AuditService.create_audit_log(
             db=db,
             entity_type="recovery_approval",
@@ -187,6 +195,7 @@ class ApprovalService:
                 "rejection_reason": rejection_reason,
             },
         )
+
         db.commit()
         db.refresh(approval)
         return approval

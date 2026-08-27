@@ -2,28 +2,45 @@
 WebhookService business logic.
 
 Processes inbound Razorpay webhooks with signature verification,
-idempotent deduplication, payment/revenue state transitions, and audit logging.
+idempotent deduplication, payment/revenue state transitions,
+automatic RecoveryCase creation, orchestration, and audit logging.
 """
 
 from datetime import datetime, timezone
 import json
+import logging
 from typing import Any, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestError
+from app.core.metrics import metrics
 from app.integrations.razorpay.exceptions import RazorpaySignatureVerificationError
 from app.integrations.razorpay.service import RazorpayService
 from app.models.enums import (
     PaymentEventProcessingStatus,
     PaymentMethod,
     PaymentStatus,
+    RecoveryCaseState,
+    RecoveryPriority,
     RevenueStatus,
+    RiskStatus,
 )
 from app.models.payment import Payment, PaymentEvent
+from app.models.recovery import RecoveryCase
 from app.models.revenue import RevenueRecord
+from app.schemas.recovery import RecoveryCaseCreate
 from app.services.audit_service import AuditService
+
+logger = logging.getLogger(__name__)
+
+# Risk thresholds for automatic risk assessment on webhook ingestion
+_LOW_RISK_MAX_AMOUNT = 100000      # < ₹1,000
+_MEDIUM_RISK_MAX_AMOUNT = 1000000  # < ₹10,000
+_HIGH_RISK_MAX_AMOUNT = 5000000    # < ₹50,000
+# >= ₹50,000 is critical risk
+
 
 
 class WebhookService:
@@ -38,6 +55,18 @@ class WebhookService:
             return PaymentMethod(method_str.lower())
         except ValueError:
             return PaymentMethod.other
+
+    @staticmethod
+    def _assess_risk_from_amount(amount_paise: int) -> tuple[RiskStatus, RecoveryPriority]:
+        """Assess risk level and priority from payment amount in paise."""
+        if amount_paise >= _HIGH_RISK_MAX_AMOUNT:
+            return RiskStatus.critical, RecoveryPriority.urgent
+        elif amount_paise >= _MEDIUM_RISK_MAX_AMOUNT:
+            return RiskStatus.high, RecoveryPriority.high
+        elif amount_paise >= _LOW_RISK_MAX_AMOUNT:
+            return RiskStatus.medium, RecoveryPriority.medium
+        else:
+            return RiskStatus.low, RecoveryPriority.medium
 
     @classmethod
     def process_razorpay_webhook(
@@ -60,6 +89,8 @@ class WebhookService:
         5. Map event to Payment and RevenueRecord models.
         6. Emit comprehensive audit trail.
         """
+        metrics.increment("webhook_received_total")
+
         # Step 1: Verify HMAC signature
         is_valid = RazorpayService.verify_webhook_signature(
             raw_body=raw_body,
@@ -67,6 +98,7 @@ class WebhookService:
             secret=webhook_secret,
         )
         if not is_valid:
+            metrics.increment("webhook_failed_total")
             raise RazorpaySignatureVerificationError("Invalid Razorpay webhook signature")
 
         # Step 2: Parse JSON payload
@@ -75,11 +107,13 @@ class WebhookService:
             if not isinstance(payload, dict):
                 raise ValueError("Payload must be a JSON object")
         except Exception as exc:
+            metrics.increment("webhook_failed_total")
             raise BadRequestError("Malformed JSON payload in webhook") from exc
 
         # Step 3: Extract Event ID and Event Type
         event_id = payload.get("id") or payload.get("event_id") or event_id_header
         if not event_id:
+            metrics.increment("webhook_failed_total")
             raise BadRequestError("Missing event ID in webhook payload")
 
         event_type = payload.get("event", "unknown")
@@ -89,13 +123,18 @@ class WebhookService:
             select(PaymentEvent).where(PaymentEvent.razorpay_event_id == event_id)
         )
         if existing_event is not None:
+            metrics.increment("webhook_duplicate_total")
             AuditService.create_audit_log(
                 db=db,
                 entity_type="payment_event",
                 entity_id=str(existing_event.id),
                 action="razorpay_webhook_duplicate",
                 actor=actor,
-                metadata={"event_id": event_id, "event_type": event_type},
+                metadata={
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "message": "Duplicate event ignored",
+                },
             )
             db.commit()
             return {
@@ -104,6 +143,7 @@ class WebhookService:
                 "event_type": event_type,
                 "message": "Duplicate event ignored",
             }
+
 
         # Step 5: Create PaymentEvent record
         payment_event = PaymentEvent(
@@ -130,6 +170,13 @@ class WebhookService:
             payload.get("payload", {}).get("payment", {}).get("entity", {})
         )
         payment_id_rzp = payment_entity.get("id")
+
+        # Initialize orchestration return values (only set for payment.failed)
+        recovery_case_id = None
+        orchestration_status = None
+        orchestration_message = None
+        approval_id = None
+        payment = None
 
         if payment_id_rzp:
             # Find or create Payment record
@@ -235,6 +282,8 @@ class WebhookService:
                     revenue.status = RevenueStatus.at_risk
                     revenue.recoverable_amount = revenue.gross_amount
 
+                db.flush()
+
                 AuditService.create_audit_log(
                     db=db,
                     entity_type="payment",
@@ -243,6 +292,119 @@ class WebhookService:
                     actor=actor,
                     metadata={"razorpay_payment_id": payment_id_rzp, "amount": payment.amount},
                 )
+
+                # Auto-create RecoveryCase and trigger orchestration
+                try:
+                    # Risk assessment from payment amount
+                    risk_status, priority = WebhookService._assess_risk_from_amount(payment.amount)
+
+                    # Determine reason from error details
+                    error_reason = payment_entity.get("error_reason") or payment_entity.get("error_code") or "payment_failed"
+                    error_description = payment_entity.get("error_description", "")
+
+                    # Check if recovery case already exists for this revenue record
+                    existing_case = db.scalar(
+                        select(RecoveryCase).where(RecoveryCase.revenue_record_id == revenue.id)
+                    )
+
+                    if existing_case is None:
+                        # Create RecoveryCase
+                        recovery_case = RecoveryCase(
+                            revenue_record_id=revenue.id,
+                            reason=error_reason,
+                            risk_status=risk_status,
+                            priority=priority,
+                            current_state=RecoveryCaseState.open,
+                        )
+                        db.add(recovery_case)
+                        db.flush()
+
+                        recovery_case_id = recovery_case.id
+
+                        AuditService.create_audit_log(
+                            db=db,
+                            entity_type="recovery_case",
+                            entity_id=str(recovery_case.id),
+                            action="recovery_case_created_from_webhook",
+                            actor=actor,
+                            metadata={
+                                "payment_id": payment.id,
+                                "revenue_record_id": revenue.id,
+                                "amount": payment.amount,
+                                "risk_status": risk_status.value,
+                                "priority": priority.value,
+                                "reason": error_reason,
+                            },
+                        )
+
+                        # Trigger orchestration (AI → Policy → Approval → Execution)
+                        try:
+                            from app.orchestration.orchestrator import RecoveryOrchestrator
+
+                            orchestration_result = RecoveryOrchestrator.orchestrate_recovery(
+                                db=db,
+                                case_id=recovery_case.id,
+                                ai_provider=None,  # Use default provider
+                                actor="webhook_auto_orchestration",
+                            )
+                            orchestration_status = orchestration_result.status.value
+                            orchestration_message = orchestration_result.message
+                            approval_id = orchestration_result.approval_id
+
+                            AuditService.create_audit_log(
+                                db=db,
+                                entity_type="recovery_case",
+                                entity_id=str(recovery_case.id),
+                                action="webhook_orchestration_completed",
+                                actor=actor,
+                                metadata={
+                                    "orchestration_status": orchestration_status,
+                                    "approval_id": approval_id,
+                                    "message": orchestration_message,
+                                },
+                            )
+                        except Exception as orch_exc:
+                            logger.warning(
+                                "Orchestration failed for case %s: %s",
+                                recovery_case.id,
+                                orch_exc,
+                            )
+                            orchestration_status = "orchestration_error"
+                            orchestration_message = f"Orchestration failed: {type(orch_exc).__name__}"
+
+                            AuditService.create_audit_log(
+                                db=db,
+                                entity_type="recovery_case",
+                                entity_id=str(recovery_case.id),
+                                action="webhook_orchestration_failed",
+                                actor=actor,
+                                metadata={
+                                    "error": type(orch_exc).__name__,
+                                    "message": str(orch_exc)[:200],
+                                },
+                            )
+                    else:
+                        recovery_case_id = existing_case.id
+                        orchestration_status = "case_already_exists"
+                        orchestration_message = f"Recovery case {existing_case.id} already exists for this revenue record"
+
+                except Exception as case_exc:
+                    logger.warning(
+                        "Failed to create recovery case for payment %s: %s",
+                        payment.id,
+                        case_exc,
+                    )
+                    AuditService.create_audit_log(
+                        db=db,
+                        entity_type="payment",
+                        entity_id=str(payment.id),
+                        action="recovery_case_creation_failed",
+                        actor=actor,
+                        metadata={
+                            "error": type(case_exc).__name__,
+                            "message": str(case_exc)[:200],
+                        },
+                    )
 
             else:
                 # Unsupported event for a known payment
@@ -268,6 +430,7 @@ class WebhookService:
         # Step 7: Finalize PaymentEvent
         payment_event.processing_status = PaymentEventProcessingStatus.processed
         payment_event.processed_at = datetime.now(timezone.utc)
+        metrics.increment("webhook_processed_total")
 
         AuditService.create_audit_log(
             db=db,
@@ -275,7 +438,15 @@ class WebhookService:
             entity_id=str(payment_event.id),
             action="razorpay_webhook_processed",
             actor=actor,
-            metadata={"event_id": event_id, "event_type": event_type},
+            metadata={
+                "event_id": event_id,
+                "event_type": event_type,
+                "payment_id": payment.id if payment else None,
+                "recovery_case_id": recovery_case_id,
+                "orchestration_status": orchestration_status,
+                "orchestration_message": orchestration_message,
+                "message": "Webhook processed successfully",
+            },
         )
 
         db.commit()
@@ -286,4 +457,9 @@ class WebhookService:
             "event_id": event_id,
             "event_type": event_type,
             "message": "Webhook processed successfully",
+            "recovery_case_id": recovery_case_id,
+            "orchestration_status": orchestration_status,
+            "orchestration_message": orchestration_message,
+            "approval_id": approval_id,
         }
+

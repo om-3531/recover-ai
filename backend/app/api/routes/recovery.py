@@ -4,11 +4,15 @@ Recovery REST API endpoints.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.exceptions import NotFoundError
+from app.models.audit import AuditLog
 from app.models.enums import RecoveryCaseState, RecoveryPriority
+from app.models.recovery import RecoveryCase
 from app.schemas.recovery import (
     RecoveryActionCreate,
     RecoveryActionResponse,
@@ -18,6 +22,7 @@ from app.schemas.recovery import (
     RecoveryCaseResponse,
     RecoveryCaseStateUpdate,
 )
+from app.schemas.webhooks import RecoveryTimelineEvent, RecoveryTimelineResponse
 from app.services.recovery_service import RecoveryService
 
 router = APIRouter(prefix="/recovery", tags=["recovery"])
@@ -127,3 +132,64 @@ def update_recovery_action_status(
         db=db, action_id=action_id, status_update=status_update
     )
     return RecoveryActionResponse.model_validate(action)
+
+
+@router.get(
+    "/cases/{case_id}/timeline",
+    response_model=RecoveryTimelineResponse,
+    summary="Get timeline of audit events for a recovery case",
+)
+def get_recovery_case_timeline(
+    case_id: int,
+    limit: int = Query(50, ge=1, le=200, description="Max events"),
+    db: Session = Depends(get_db),
+) -> RecoveryTimelineResponse:
+    """
+    Returns the ordered audit log timeline for a specific recovery case.
+    Uses entity_type='recovery_case' with entity_id=case_id.
+    """
+    # Validate case exists
+    case_exists = db.scalar(select(RecoveryCase.id).where(RecoveryCase.id == case_id))
+    if case_exists is None:
+        raise HTTPException(status_code=404, detail=f"RecoveryCase {case_id} not found")
+
+    entity_id_str = str(case_id)
+    count = db.scalar(
+        select(func.count())
+        .select_from(AuditLog)
+        .where(
+            AuditLog.entity_type == "recovery_case",
+            AuditLog.entity_id == entity_id_str,
+        )
+    ) or 0
+
+    rows = list(
+        db.scalars(
+            select(AuditLog)
+            .where(
+                AuditLog.entity_type == "recovery_case",
+                AuditLog.entity_id == entity_id_str,
+            )
+            .order_by(AuditLog.timestamp.asc())
+            .limit(limit)
+        ).all()
+    )
+
+    events = [
+        RecoveryTimelineEvent(
+            id=r.id,
+            action=r.action,
+            actor=r.actor,
+            entity_type=r.entity_type,
+            entity_id=r.entity_id,
+            event_metadata=r.event_metadata,
+            timestamp=r.timestamp,
+        )
+        for r in rows
+    ]
+
+    return RecoveryTimelineResponse(
+        recovery_case_id=case_id,
+        events=events,
+        total_events=count,
+    )

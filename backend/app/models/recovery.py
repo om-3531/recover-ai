@@ -23,6 +23,7 @@ from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.approval import RecoveryApproval
+    from app.models.job import RecoveryExecutionJob
     from app.models.revenue import RevenueRecord
 
 
@@ -81,6 +82,13 @@ class RecoveryCase(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="RecoveryApproval.id",
     )
+    execution_jobs: Mapped[list["RecoveryExecutionJob"]] = relationship(
+        "RecoveryExecutionJob",
+        back_populates="recovery_case",
+        cascade="all, delete-orphan",
+        order_by="RecoveryExecutionJob.id",
+    )
+
 
 
 

@@ -19,6 +19,7 @@ from app.models.enums import (
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.job import RecoveryExecutionJob
     from app.models.recovery import RecoveryAction, RecoveryCase
 
 
@@ -100,3 +101,10 @@ class RecoveryApproval(Base, TimestampMixin):
     recovery_action: Mapped[Optional["RecoveryAction"]] = relationship(
         "RecoveryAction",
     )
+    execution_jobs: Mapped[list["RecoveryExecutionJob"]] = relationship(
+        "RecoveryExecutionJob",
+        back_populates="recovery_approval",
+        cascade="all, delete-orphan",
+        order_by="RecoveryExecutionJob.id",
+    )
+

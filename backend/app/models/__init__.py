@@ -9,6 +9,7 @@ from app.models.approval import RecoveryApproval
 from app.models.audit import AuditLog
 from app.models.enums import (
     ApprovalStatus,
+    JobStatus,
     PaymentEventProcessingStatus,
     PaymentMethod,
     PaymentStatus,
@@ -20,8 +21,10 @@ from app.models.enums import (
     RevenueStatus,
     RiskStatus,
 )
+from app.models.job import RecoveryExecutionJob
 from app.models.mixins import TimestampMixin
 from app.models.payment import Payment, PaymentEvent
+from app.models.policy import MerchantPolicy
 from app.models.recovery import RecoveryAction, RecoveryCase
 from app.models.revenue import RevenueRecord
 from app.models.system import SystemHealthCheck
@@ -34,6 +37,8 @@ __all__ = [
     "RecoveryCase",
     "RecoveryAction",
     "RecoveryApproval",
+    "RecoveryExecutionJob",
+    "MerchantPolicy",
     "AuditLog",
     "PaymentStatus",
     "PaymentMethod",
@@ -46,5 +51,8 @@ __all__ = [
     "RecoveryActionType",
     "RecoveryActionChannel",
     "ApprovalStatus",
+    "JobStatus",
     "TimestampMixin",
 ]
+
+

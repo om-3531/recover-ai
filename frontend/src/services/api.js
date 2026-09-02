@@ -1,7 +1,8 @@
 /**
  * API client for the RecoverAI backend.
  *
- * Provides typed helpers for health, readiness, analytics, system status, demo seeding, and scenarios.
+ * Provides typed helpers for health, readiness, analytics, system status, demo seeding, scenarios,
+ * payments, recovery cases, approvals, executions, and audit logs.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -147,7 +148,6 @@ export async function runDemoScenario(scenarioId, seed = 42) {
   });
 }
 
-
 // --- Merchant Policy Endpoints ---
 export async function getCurrentPolicy(merchantId = "merchant_default") {
   return fetchJson(`/api/v1/policies/current?merchant_id=${encodeURIComponent(merchantId)}`);
@@ -238,3 +238,63 @@ export async function getRecoveryCaseTimeline(caseId, limit = 50) {
   return fetchJson(`/api/v1/recovery/cases/${caseId}/timeline?limit=${limit}`);
 }
 
+// --- Payments Endpoints ---
+export async function listPayments(params = {}) {
+  return fetchJson(`/api/v1/payments${buildQueryString(params)}`);
+}
+
+export async function getPayment(paymentId) {
+  return fetchJson(`/api/v1/payments/${paymentId}`);
+}
+
+export async function getPaymentByRazorpayId(rzpPaymentId) {
+  return fetchJson(`/api/v1/payments/razorpay/${encodeURIComponent(rzpPaymentId)}`);
+}
+
+// --- Recovery Cases Endpoints ---
+export async function listRecoveryCases(params = {}) {
+  return fetchJson(`/api/v1/recovery/cases${buildQueryString(params)}`);
+}
+
+export async function getRecoveryCase(caseId) {
+  return fetchJson(`/api/v1/recovery/cases/${caseId}`);
+}
+
+export async function updateRecoveryCaseState(caseId, state) {
+  return fetchJson(`/api/v1/recovery/cases/${caseId}/state`, {
+    method: "PATCH",
+    body: JSON.stringify({ current_state: state }),
+  });
+}
+
+export async function orchestrateRecoveryCase(caseId, requestData = {}) {
+  return fetchJson(`/api/v1/recovery-cases/${caseId}/orchestrate`, {
+    method: "POST",
+    body: JSON.stringify(requestData),
+  });
+}
+
+export async function getRecoveryWorkflowStatus(caseId) {
+  return fetchJson(`/api/v1/recovery-cases/${caseId}/workflow`);
+}
+
+// --- AI Decisions Endpoints ---
+export async function generateAiDecision(caseId) {
+  return fetchJson(`/api/v1/ai/recovery-cases/${caseId}/decision`, {
+    method: "POST",
+  });
+}
+
+// --- Audit Trail Endpoints ---
+export async function listAuditLogs(params = {}) {
+  return fetchJson(`/api/v1/audit${buildQueryString(params)}`);
+}
+
+// --- Execution Jobs Endpoints ---
+export async function listExecutionJobs(params = {}) {
+  return fetchJson(`/api/v1/execution-jobs${buildQueryString(params)}`);
+}
+
+export async function getExecutionJob(jobId) {
+  return fetchJson(`/api/v1/execution-jobs/${jobId}`);
+}

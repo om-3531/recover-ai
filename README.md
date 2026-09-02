@@ -1,211 +1,106 @@
-# RecoverAI
+# Smart AI Resume Analyzer & Career Platform
 
-**AI-Powered Payment Recovery Automation Platform**
-Razorpay Buildathon 2026 — Track 03: AI Revenue Recovery
+**Next-Generation AI Career Acceleration & ATS Intelligence Platform**
+
+Built with **Python**, **Streamlit**, **Plotly**, **SQLite**, and **Deterministic NLP / Generative AI Engine**.
 
 ---
 
-## Overview
+## 🌟 Key Highlights & Modules
 
-RecoverAI detects at-risk and failed payments, diagnoses the cause using AI,
-recommends a recovery intervention, applies deterministic policy checks,
-and executes a bounded recovery workflow — with a human approval gate for
-high-risk actions. Every decision is recorded in an audit trail.
+### 1. 📄 AI Resume Intelligence & ATS Scoring
+- **Deterministic Multi-Axis Evaluation**: Calculates Overall Score (/100), ATS Parsability Score, Technical Skills Breadth, Experience & Project Impact, Education Score, Keyword Density, and Formatting Quality.
+- **Interactive Visualizations**: Circular score gauges and 6-axis polar radar charts powered by Plotly.
+- **Automated Insights**: Identifies concrete strengths, areas for improvement, missing sections, and actionable recommendations.
+- **Report Export**: Instant download of comprehensive PDF audit reports and text summaries.
 
-**Architecture principle: AI never directly controls money.**
+### 2. 🎯 Job Description Match Analyzer
+- **Direct Semantic & Keyword Comparison**: Paste any job description to compute real-time technical match percentages.
+- **Skill Overlap**: Visual breakdown of matched skills vs. missing target technologies.
+- **Tailoring Suggestions**: Generates targeted phrasing and section enhancements for specific job openings.
 
-```
-AI recommendation → PolicyEngine → ApprovalService → ExecutionService
-```
+### 3. 🧠 AI Skill Gap Analyzer
+- **Industry Role Benchmarks**: Compares candidate profile against benchmarks for AI/ML Engineer, Full-Stack Developer, Android Developer, Data Scientist, Cloud/DevOps, and Software Engineer.
+- **Proficiency Estimation & Priority Ranking**: Ranks missing skills into High/Medium/Low priority tiers with estimated learning hours.
+- **3-Phase Learning Roadmap**: Tailored curriculum spanning Beginner, Intermediate, and Advanced milestones.
 
-## Features
+### 4. 🗺️ 30-60-90 Day Career Action Roadmap
+- **Structured Transition Plans**: Detailed 30-day foundational, 60-day systems integration, and 90-day production deployment plans.
+- **Milestones**: Daily practice routines, LeetCode/interview preparation targets, portfolio capstone projects, and resume updates.
 
-- **AI Payment Diagnosis**: MockAIProvider (default) or Gemini (opt-in)
-- **Razorpay Webhook Integration**: HMAC-SHA256 signature verification, idempotency dedup
-- **Risk Assessment**: Automatic low-risk vs high-risk classification
-- **Low-Risk Auto-Recovery**: Automatic execution for low-risk payment failures
-- **High-Risk Approval Gate**: Human-in-the-loop approval required for high-risk cases
-- **Interactive Approval Dashboard**: Approve/reject pending approvals from the UI
-- **Real-Time Live Monitor**: Webhook event feed with case timeline
-- **Pipeline Visualization**: 8-stage pipeline showing recovery progress
-- **Analytics Dashboard**: KPIs, revenue recovery rates, case distribution
-- **Demo Mode**: Full simulation without real Razorpay credentials
-- **Comprehensive Audit Trail**: Every state mutation logged
+### 5. ✨ AI Resume Bullet Improver
+- **STAR & Google XYZ Framework**: Transforms weak/passive draft sentences into high-impact, ATS-optimized bullet points using power action verbs and quantifiable metrics.
+- **Before / After Comparison**: Interactive side-by-side diff cards with tips.
 
-## Tech Stack
+### 6. ✍️ AI Cover Letter Generator
+- **Grounded Generation**: Creates personalized, tailored cover letters referencing actual candidate projects, education, and internship achievements.
+- **Export Options**: 1-click download as formatted PDF or plain text (.txt).
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18, Vite, Tailwind CSS |
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2.x, Pydantic |
-| Database | SQLite (local dev), PostgreSQL (Docker/production) |
-| AI | MockAIProvider (default), Gemini (opt-in via `AI_PROVIDER=gemini`) |
-| Payments | Razorpay Test Mode + Webhooks |
-| Deployment | Docker, docker-compose |
+### 7. 📚 AI Interview Preparation
+- **Comprehensive Question Bank**: Technical, HR, Behavioral, and Project questions with difficulty levels (Easy, Medium, Hard).
+- **Answer Blueprints**: Includes "Why the interviewer asks this", structured sample answers, and key points to mention.
 
-## Quick Start (2 terminals)
+### 8. 🤖 Interactive AI Mock Interview
+- **Realistic Practice Simulation**: Step-by-step Q&A flow with the AI interviewer.
+- **Multi-Dimensional Answer Grading**: Evaluates Technical Accuracy, Communication Clarity, Confidence & Tone, Relevance, and Completeness.
 
-### Terminal 1 — Backend
+### 9. 📊 Career Analytics Dashboard
+- **Real-Time KPIs**: Tracks active resume score, ATS rating, job matches run, and mock interview grades.
+- **Visual Analytics**: Interactive line charts of score progression over time, technical domain distribution donut charts, and application history logs.
 
+### 10. 📝 ATS Resume Builder
+- **Structured Form Builder**: Interactive inputs for contact info, summary, education, experience, projects, skills, and honors.
+- **Live Preview & Export**: Live single-page ATS preview with instant PDF and TXT downloads.
+
+### 11. 🔍 Job Search & Recommendations
+- **Simulated Tech Job Openings**: Explore current software engineering and AI openings with 1-click instant match audits.
+
+### 12. 👩‍💻 Professional Portfolio (Prajakta Bhambar)
+- **Verified Candidate Profile**:
+  - **Headline**: Computer Engineering Student | Software Developer | AI/ML Enthusiast
+  - **Education**: B.Tech in Computer Engineering (SNJB's Late Sau. Kantabai Bhavarlalji Jain COE, Chandwad - Expected 2028), Diploma in Computer Engineering (88.63%), SSC (90.00%)
+  - **Internship**: Android Development Intern (Cognifyz IT Solutions Pvt. Ltd.)
+  - **Key Projects**: PersonaOS (Agentic AI Goal-Achievement Assistant), AI-Driven Smart Transportation System (YOLO/OpenCV), Student Grade Management App (Android/Java/SQLite)
+  - **Skills**: C, C++, Java, Python, SQL, Machine Learning, Computer Vision, YOLO, Agentic AI, HTML, CSS, JavaScript, PHP, MySQL, Git, GitHub, Android Studio, SQLite
+  - **Achievements**: First Runner-Up – Hackspectra 2.0 Hackathon, Finalist – Hack Better Than Me Hackathon, CampusCrew 100K Milestone Honor Certificate
+
+### 13. ⭐ User Feedback & Reviews
+- **Community Ratings & Admin Review**: Allows users to rate features and leave comments with SQLite persistence.
+
+### 14. 🔐 Authentication & Session Persistence
+- **Secure Hashing**: User registration, login, and admin roles with SHA-256 + salt password security.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
 ```bash
-cd D:\Downloads\recover-ai\backend
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m pip install -r requirements.txt
 ```
 
-### Terminal 2 — Frontend
-
+### 2. Run Headless Smoke Test
 ```bash
-cd D:\Downloads\recover-ai\frontend
-npm run dev
+python tests/smoke_test.py
 ```
 
-### Open Dashboard
-
-Navigate to **http://localhost:5173**
-
-> **Getting ERR_CONNECTION_REFUSED?** This means the frontend dev server
-> is not running. Make sure Terminal 2 is active with `npm run dev`.
-
-## URLs
-
-| Service | URL |
-|---------|-----|
-| Dashboard | http://localhost:5173 |
-| Backend API | http://127.0.0.1:8000 |
-| Swagger Docs | http://127.0.0.1:8000/docs |
-| Health Check | http://127.0.0.1:8000/health |
-| Readiness Probe | http://127.0.0.1:8000/ready |
-
-## Demo Instructions
-
-1. Start both backend and frontend (see Quick Start above)
-2. Open http://localhost:5173
-3. Click **Seed Demo Data** to populate sample data (20 cases)
-4. Click **Low-Risk Failure** to simulate automatic recovery
-5. Click **High-Risk Failure** to trigger the approval workflow
-6. In the **Approval Center**, click **Approve** to authorize recovery
-7. Watch the pipeline complete and timeline update
-
-## Environment Variables
-
-Copy `.env.example` to `.env` in the project root:
-
+### 3. Launch Application
 ```bash
-cp .env.example .env
+python -m streamlit run app.py
 ```
 
-Key variables (all have safe defaults for local demo):
+Open your browser at: **http://localhost:8501**
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AI_PROVIDER` | `mock` | Set to `gemini` for live AI |
-| `DEMO_MODE` | `true` | Enable demo endpoints |
-| `RAZORPAY_KEY_ID` | `""` | Empty = no real Razorpay calls |
-| `RAZORPAY_KEY_SECRET` | `""` | Empty = no real Razorpay calls |
-| `RAZORPAY_WEBHOOK_SECRET` | `""` | Empty = simulation uses mock secret |
-| `DATABASE_URL` | PostgreSQL default | SQLite used for local dev |
+---
 
-**Never commit `.env` with real credentials.**
-
-## Running Tests
-
-```bash
-cd backend
-.\.venv\Scripts\python.exe -m pytest tests/ -v
-```
-
-Current: **390/390 tests passing**
-
-## Building for Production
-
-```bash
-cd frontend
-npm run build
-```
-
-Output: `frontend/dist/` (47 modules, ~73KB gzipped)
-
-## Docker Deployment
-
-```bash
-# Start PostgreSQL + Backend
-docker compose up -d
-
-# Frontend runs locally
-cd frontend && npm install && npm run dev
-```
-
-The backend Dockerfile creates tables automatically on first startup
-(no manual Alembic migration needed for fresh databases).
-
-## Project Structure
-
-```
-recover-ai/
-├── frontend/                  React + Vite + Tailwind dashboard
-│   └── src/
-│       ├── components/        ApprovalCenter, Sidebar, TopNav, StatCard
-│       ├── pages/             DashboardPage, PolicySettingsPage, WebhookConsolePage
-│       ├── services/api.js    API client functions
-│       └── hooks/             useSystemStatus
-├── backend/                   FastAPI application
-│   └── app/
-│       ├── api/routes/        REST endpoints (health, payments, webhooks, etc.)
-│       ├── ai/                AI provider abstraction + MockAIProvider + Gemini
-│       ├── approval/          ApprovalService, ApprovalPolicy, schemas
-│       ├── execution/         RecoveryExecutionService, RecoveryExecutor
-│       ├── orchestration/     RecoveryOrchestrator (end-to-end coordination)
-│       ├── integrations/      Razorpay client, signature verification
-│       ├── models/            SQLAlchemy models + enums
-│       ├── services/          WebhookService, AuditService, AnalyticsService
-│       ├── demo/              Synthetic data generator + scenarios
-│       ├── policy/            MerchantPolicy rules engine
-│       ├── jobs/              Background execution jobs
-│       └── providers/         Multi-channel providers (Mock + real foundations)
-├── docs/                      Architecture, demo scripts, checklists
-├── docker-compose.yml         PostgreSQL + Backend
-└── .env.example               Environment variable template
-```
-
-## Architecture
-
-See [`docs/architecture.md`](docs/architecture.md) for the full system
-diagram and architecture rules.
-
-Key principle: **AI never directly controls money.** The flow is always:
-
-```
-AI recommendation → PolicyEngine → ApprovalService → ExecutionService
-```
-
-Server-side policy remains authoritative. The frontend never authorizes
-financial actions directly.
-
-## Security
-
-- HMAC-SHA256 with constant-time comparison for webhook signatures
-- Idempotent duplicate webhook handling
-- No secrets in frontend code or API responses
-- CORS restricted to localhost
-- Demo mode safety gates on all simulation endpoints
-- All monetary values stored as integer paise (never float)
-
-## Troubleshooting
-
-**ERR_CONNECTION_REFUSED on localhost:5173**
-→ The frontend dev server is not running. Start it with `npm run dev`.
-
-**Backend returns 500 on first request**
-→ Database tables may not exist. The app auto-creates tables on startup.
-If issues persist, restart the backend server.
-
-**No data in dashboard**
-→ Click "Seed Demo Data" to populate sample recovery cases.
-
-**Approval Center is empty**
-→ Simulate a high-risk payment failure first. High-risk cases require
-human approval; low-risk cases auto-complete.
-
-## License
-
-Built for Razorpay Buildathon 2026.
+## 🗄️ Database Architecture
+All application data is persisted locally in an SQLite database located at `data/career_platform.db`:
+- `users`: User profiles, hashed credentials, and roles.
+- `resumes`: Raw text and parsed entity structures.
+- `resume_analyses`: Multi-axis scores, strengths, and recommendations.
+- `job_matches`: Job titles, match percentages, matched/missing skills.
+- `skill_gaps`: Target role gaps and 3-phase roadmaps.
+- `career_roadmaps`: 30-60-90 day milestone plans.
+- `mock_interviews`: Session histories, scores, and evaluations.
+- `cover_letters`: Saved cover letters.
+- `feedback`: User ratings and platform reviews.

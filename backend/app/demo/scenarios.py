@@ -96,6 +96,14 @@ def list_available_scenarios() -> List[DemoScenarioInfo]:
     return AVAILABLE_SCENARIOS
 
 
+def _get_unique_payment_id(db: Session, base_id: str) -> str:
+    existing = db.query(Payment.id).filter(Payment.razorpay_payment_id == base_id).first()
+    if existing is not None:
+        import time
+        return f"{base_id}_{int(time.time() * 1000) % 1000000}"
+    return base_id
+
+
 def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioRunResponse:
     """Executes a specific end-to-end recovery scenario."""
     now = datetime.now(timezone.utc)
@@ -103,7 +111,7 @@ def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioR
     if scenario_id == "success":
         # 1. Low risk auto recovery
         p = Payment(
-            razorpay_payment_id=f"pay_demo_succ_{seed}",
+            razorpay_payment_id=_get_unique_payment_id(db, f"pay_demo_succ_{seed}"),
             amount=250000,  # ₹2,500.00
             currency="INR",
             status=PaymentStatus.failed,
@@ -154,7 +162,7 @@ def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioR
     elif scenario_id == "human_review":
         # 2. High risk case requiring human review
         p = Payment(
-            razorpay_payment_id=f"pay_demo_high_{seed}",
+            razorpay_payment_id=_get_unique_payment_id(db, f"pay_demo_high_{seed}"),
             amount=1500000,  # ₹15,000.00
             currency="INR",
             status=PaymentStatus.failed,
@@ -202,7 +210,7 @@ def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioR
     elif scenario_id == "retry":
         # 3. Retryable provider failure
         p = Payment(
-            razorpay_payment_id=f"pay_demo_retry_{seed}",
+            razorpay_payment_id=_get_unique_payment_id(db, f"pay_demo_retry_{seed}"),
             amount=350000,
             currency="INR",
             status=PaymentStatus.failed,
@@ -268,7 +276,7 @@ def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioR
     elif scenario_id == "failure":
         # 4. Permanent failure
         p = Payment(
-            razorpay_payment_id=f"pay_demo_fail_{seed}",
+            razorpay_payment_id=_get_unique_payment_id(db, f"pay_demo_fail_{seed}"),
             amount=400000,
             currency="INR",
             status=PaymentStatus.failed,
@@ -333,7 +341,7 @@ def run_scenario(db: Session, scenario_id: str, seed: int = 42) -> DemoScenarioR
     elif scenario_id == "blocked":
         # 5. Policy blocked
         p = Payment(
-            razorpay_payment_id=f"pay_demo_blk_{seed}",
+            razorpay_payment_id=_get_unique_payment_id(db, f"pay_demo_blk_{seed}"),
             amount=100000,
             currency="INR",
             status=PaymentStatus.captured,

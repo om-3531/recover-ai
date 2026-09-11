@@ -1,106 +1,312 @@
-# Smart AI Resume Analyzer & Career Platform
+# RecoverAI — AI Revenue Recovery
 
-**Next-Generation AI Career Acceleration & ATS Intelligence Platform**
+RecoverAI is an AI-powered revenue recovery platform designed to help businesses recover lost revenue from failed payments.
 
-Built with **Python**, **Streamlit**, **Plotly**, **SQLite**, and **Deterministic NLP / Generative AI Engine**.
+When a payment fails, RecoverAI receives the payment event, analyzes the failure using AI, generates a recovery recommendation, and passes that recommendation through a deterministic Policy Engine before any recovery action is executed.
 
----
+Low-risk cases can be recovered automatically, while high-risk cases require human approval. RecoverAI also provides payment tracking, recovery case management, AI decisions, analytics, webhook processing, duplicate protection, and a complete audit trail.
 
-## 🌟 Key Highlights & Modules
-
-### 1. 📄 AI Resume Intelligence & ATS Scoring
-- **Deterministic Multi-Axis Evaluation**: Calculates Overall Score (/100), ATS Parsability Score, Technical Skills Breadth, Experience & Project Impact, Education Score, Keyword Density, and Formatting Quality.
-- **Interactive Visualizations**: Circular score gauges and 6-axis polar radar charts powered by Plotly.
-- **Automated Insights**: Identifies concrete strengths, areas for improvement, missing sections, and actionable recommendations.
-- **Report Export**: Instant download of comprehensive PDF audit reports and text summaries.
-
-### 2. 🎯 Job Description Match Analyzer
-- **Direct Semantic & Keyword Comparison**: Paste any job description to compute real-time technical match percentages.
-- **Skill Overlap**: Visual breakdown of matched skills vs. missing target technologies.
-- **Tailoring Suggestions**: Generates targeted phrasing and section enhancements for specific job openings.
-
-### 3. 🧠 AI Skill Gap Analyzer
-- **Industry Role Benchmarks**: Compares candidate profile against benchmarks for AI/ML Engineer, Full-Stack Developer, Android Developer, Data Scientist, Cloud/DevOps, and Software Engineer.
-- **Proficiency Estimation & Priority Ranking**: Ranks missing skills into High/Medium/Low priority tiers with estimated learning hours.
-- **3-Phase Learning Roadmap**: Tailored curriculum spanning Beginner, Intermediate, and Advanced milestones.
-
-### 4. 🗺️ 30-60-90 Day Career Action Roadmap
-- **Structured Transition Plans**: Detailed 30-day foundational, 60-day systems integration, and 90-day production deployment plans.
-- **Milestones**: Daily practice routines, LeetCode/interview preparation targets, portfolio capstone projects, and resume updates.
-
-### 5. ✨ AI Resume Bullet Improver
-- **STAR & Google XYZ Framework**: Transforms weak/passive draft sentences into high-impact, ATS-optimized bullet points using power action verbs and quantifiable metrics.
-- **Before / After Comparison**: Interactive side-by-side diff cards with tips.
-
-### 6. ✍️ AI Cover Letter Generator
-- **Grounded Generation**: Creates personalized, tailored cover letters referencing actual candidate projects, education, and internship achievements.
-- **Export Options**: 1-click download as formatted PDF or plain text (.txt).
-
-### 7. 📚 AI Interview Preparation
-- **Comprehensive Question Bank**: Technical, HR, Behavioral, and Project questions with difficulty levels (Easy, Medium, Hard).
-- **Answer Blueprints**: Includes "Why the interviewer asks this", structured sample answers, and key points to mention.
-
-### 8. 🤖 Interactive AI Mock Interview
-- **Realistic Practice Simulation**: Step-by-step Q&A flow with the AI interviewer.
-- **Multi-Dimensional Answer Grading**: Evaluates Technical Accuracy, Communication Clarity, Confidence & Tone, Relevance, and Completeness.
-
-### 9. 📊 Career Analytics Dashboard
-- **Real-Time KPIs**: Tracks active resume score, ATS rating, job matches run, and mock interview grades.
-- **Visual Analytics**: Interactive line charts of score progression over time, technical domain distribution donut charts, and application history logs.
-
-### 10. 📝 ATS Resume Builder
-- **Structured Form Builder**: Interactive inputs for contact info, summary, education, experience, projects, skills, and honors.
-- **Live Preview & Export**: Live single-page ATS preview with instant PDF and TXT downloads.
-
-### 11. 🔍 Job Search & Recommendations
-- **Simulated Tech Job Openings**: Explore current software engineering and AI openings with 1-click instant match audits.
-
-### 12. 👩‍💻 Professional Portfolio (Prajakta Bhambar)
-- **Verified Candidate Profile**:
-  - **Headline**: Computer Engineering Student | Software Developer | AI/ML Enthusiast
-  - **Education**: B.Tech in Computer Engineering (SNJB's Late Sau. Kantabai Bhavarlalji Jain COE, Chandwad - Expected 2028), Diploma in Computer Engineering (88.63%), SSC (90.00%)
-  - **Internship**: Android Development Intern (Cognifyz IT Solutions Pvt. Ltd.)
-  - **Key Projects**: PersonaOS (Agentic AI Goal-Achievement Assistant), AI-Driven Smart Transportation System (YOLO/OpenCV), Student Grade Management App (Android/Java/SQLite)
-  - **Skills**: C, C++, Java, Python, SQL, Machine Learning, Computer Vision, YOLO, Agentic AI, HTML, CSS, JavaScript, PHP, MySQL, Git, GitHub, Android Studio, SQLite
-  - **Achievements**: First Runner-Up – Hackspectra 2.0 Hackathon, Finalist – Hack Better Than Me Hackathon, CampusCrew 100K Milestone Honor Certificate
-
-### 13. ⭐ User Feedback & Reviews
-- **Community Ratings & Admin Review**: Allows users to rate features and leave comments with SQLite persistence.
-
-### 14. 🔐 Authentication & Session Persistence
-- **Secure Hashing**: User registration, login, and admin roles with SHA-256 + salt password security.
+> **In simple terms:** RecoverAI helps businesses recover more revenue from failed payments while keeping financial actions safe, controlled, and auditable.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Key Features
 
-### 1. Install Dependencies
-```bash
-python -m pip install -r requirements.txt
-```
+### 1. 💳 Failed Payment Detection
 
-### 2. Run Headless Smoke Test
-```bash
-python tests/smoke_test.py
-```
+RecoverAI processes failed payment events through a webhook-based workflow.
 
-### 3. Launch Application
-```bash
-python -m streamlit run app.py
-```
+The system captures payment information and creates the corresponding payment, revenue, and recovery records.
 
-Open your browser at: **http://localhost:8501**
+### 2. 🧠 AI-Powered Failure Diagnosis
 
----
+RecoverAI uses AI to analyze failed payment cases and generate recovery recommendations.
 
-## 🗄️ Database Architecture
-All application data is persisted locally in an SQLite database located at `data/career_platform.db`:
-- `users`: User profiles, hashed credentials, and roles.
-- `resumes`: Raw text and parsed entity structures.
-- `resume_analyses`: Multi-axis scores, strengths, and recommendations.
-- `job_matches`: Job titles, match percentages, matched/missing skills.
-- `skill_gaps`: Target role gaps and 3-phase roadmaps.
-- `career_roadmaps`: 30-60-90 day milestone plans.
-- `mock_interviews`: Session histories, scores, and evaluations.
-- `cover_letters`: Saved cover letters.
-- `feedback`: User ratings and platform reviews.
+The AI provides:
+
+- Failure diagnosis
+- Confidence level
+- Recommended recovery action
+- Recommended recovery channel
+- Risk-aware decision support
+
+The project supports Gemini AI with a safe Mock AI fallback for reliable demonstration.
+
+### 3. 🛡️ Deterministic Policy Engine
+
+AI does not directly control financial transactions.
+
+Every AI-recommended recovery action is checked by a server-side Policy Engine before execution.
+
+The Policy Engine evaluates:
+
+- Transaction amount
+- Risk level
+- Recovery action
+- Approval requirements
+- Safety constraints
+
+This creates a clear separation between **AI recommendation** and **financial authorization**.
+
+### 4. 👤 Human Approval for High-Risk Actions
+
+High-risk recovery actions require human approval before execution.
+
+The workflow is:
+
+```text
+AI Recommendation
+        ↓
+Policy Engine
+        ↓
+Human Approval Required
+        ↓
+Approval
+        ↓
+Recovery Execution
+5. ⚡ Automated Low-Risk Recovery
+
+Low-risk cases can follow an automated recovery workflow.
+
+Failed Payment
+      ↓
+AI Diagnosis
+      ↓
+Policy Check
+      ↓
+Auto Approval
+      ↓
+Recovery Action
+      ↓
+Recovery Tracking
+
+This reduces manual work and enables faster recovery of failed payments.
+
+6. 🔄 Webhook & Idempotency Protection
+
+RecoverAI protects against duplicate payment webhooks.
+
+If the same webhook is received multiple times, the system detects the duplicate and prevents duplicate payment or recovery cases from being created.
+
+First Webhook
+     ↓
+Processed
+     ↓
+Payment + Revenue + Recovery Case
+
+Same Webhook Again
+     ↓
+Duplicate Detected
+     ↓
+Ignored Safely
+7. 📋 Recovery Queue
+
+The Recovery Queue provides an operational view of recovery cases.
+
+It includes:
+
+Payment failure reason
+Risk level
+Priority
+Recovery status
+Recovery orchestration
+Case timeline
+8. 🤖 AI Decisions
+
+The AI Decisions page provides visibility into AI recommendations and approval decisions.
+
+It displays:
+
+AI diagnosis
+Confidence
+Recommended recovery channel
+Human approval requirement
+Policy constraints
+Approval status
+
+The AI recommendation remains separate from final financial authorization.
+
+9. 📊 Analytics Dashboard
+
+RecoverAI provides analytics for monitoring revenue recovery performance.
+
+The dashboard includes:
+
+Recoverable revenue
+Recovered revenue
+Recovery rate
+Execution success rate
+Recovery trends
+Channel performance
+Failure diagnostics
+10. 🧾 Audit Trail
+
+Important system events are recorded in the audit trail.
+
+Examples include:
+
+Webhook received
+Duplicate webhook detected
+AI decision generated
+Policy decision
+Approval requested
+Approval completed
+Recovery execution
+Recovery case state changes
+
+This provides complete traceability across the recovery lifecycle.
+
+11. 🧪 Failure Lab
+
+The Failure Lab provides a controlled environment for demonstrating payment failure scenarios.
+
+It can be used to simulate:
+
+Failed payment webhooks
+Recovery processing
+Duplicate webhook delivery
+Idempotency behavior
+
+This allows the complete recovery workflow to be demonstrated without requiring live payment credentials.
+
+🔄 How RecoverAI Works
+
+The complete recovery lifecycle is:
+
+Failed Payment
+      ↓
+Webhook Ingestion
+      ↓
+Payment / Revenue Synchronization
+      ↓
+AI Failure Diagnosis
+      ↓
+Recovery Recommendation
+      ↓
+Deterministic Policy Engine
+      ↓
+Risk / Policy Check
+      ↓
+ ┌───────────────────┐
+ │                   │
+Low Risk         High Risk
+ │                   │
+ ↓                   ↓
+Auto Approval   Human Approval
+ │                   │
+ └─────────┬─────────┘
+           ↓
+  Recovery Execution
+           ↓
+  Case State Update
+           ↓
+      Audit Trail
+🛡️ Safety & Security
+
+RecoverAI is designed with financial-action safety in mind.
+
+AI Does Not Directly Control Money
+
+The AI provides diagnosis and recovery recommendations. It does not directly authorize financial transactions.
+
+Human-in-the-Loop
+
+High-risk recovery cases can require explicit human approval before execution.
+
+Deterministic Policy Engine
+
+Every recovery recommendation passes through server-side policy checks before execution.
+
+Idempotency
+
+Duplicate webhook deliveries are detected and safely ignored to prevent duplicate recovery processing.
+
+Secure Webhook Verification
+
+Webhook requests use HMAC-SHA256 signature verification.
+
+Safe Demo Mode
+
+The project supports synthetic/demo scenarios so the recovery workflow can be demonstrated without requiring live financial transactions.
+
+🏗️ Architecture
+                    ┌─────────────────────┐
+                    │   Payment Failure   │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │ Webhook Ingestion   │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │ Payment / Revenue   │
+                    │ Synchronization     │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │    AI Diagnosis     │
+                    │  & Recommendation   │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │   Policy Engine     │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │ Approval / Auto     │
+                    │ Decision            │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │ Recovery Execution  │
+                    └──────────┬──────────┘
+                               ↓
+                    ┌─────────────────────┐
+                    │    Audit Trail      │
+                    └─────────────────────┘
+🧰 Tech Stack
+Frontend
+React
+Vite
+JavaScript
+React Router
+Backend
+Python
+FastAPI
+Uvicorn
+Pydantic
+AI
+Gemini AI
+Mock AI Safe Fallback
+Database
+SQLite
+SQLAlchemy
+Security
+HMAC-SHA256
+Idempotency protection
+Server-side Policy Engine
+Human approval workflow
+📁 Project Structure
+recover-ai/
+│
+├── backend/
+│   ├── app/
+│   └── tests/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── layouts/
+│   │   ├── services/
+│   │   └── utils/
+│   │
+│   └── package.json
+│
+├── data/
+├── docs/
+├── n8n/
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+└── README.md
